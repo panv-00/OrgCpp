@@ -20,6 +20,8 @@
 #include <functional>
 #include <signal.h>
 #include <sys/select.h>
+#include <sys/stat.h>
+#include <stdlib.h>
 
 #define APPNAME     "btcpp"
 #define APPVERSION  "0.0.1"

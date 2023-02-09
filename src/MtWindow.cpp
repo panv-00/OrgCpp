@@ -88,6 +88,14 @@ void MtWindow::Run()
 
   run_menu->AddSubMenu
   (
+    'n',
+    "New Ticket",
+    std::bind(&MtWindow::_CallOption_NewTicket, this),
+    nullptr
+  );
+
+  run_menu->AddSubMenu
+  (
     'q',
     "Quit",
     std::bind(&MtWindow::_CallOption_Exit, this),
@@ -114,6 +122,7 @@ void MtWindow::Run()
 
     for (const auto &option : options)
     {
+      status_message += "  ";
       status_message.push_back(option.first);
       status_message += " -> ";
       status_message += option.second.name;
@@ -152,10 +161,6 @@ void MtWindow::Run()
             }
           }
         }
-        //if (read(STDIN_FILENO, &c, 1) > 0)
-        //{
-        //  if (c == 'q') { exit_app = true; }
-        //}
       }
     }
   }
@@ -166,6 +171,11 @@ void MtWindow::Run()
 void MtWindow::_CallOption_Exit()
 {
   exit_app = true;
+}
+
+void MtWindow::_CallOption_NewTicket()
+{
+  return;
 }
 
 void MtWindow::_ClrScr()

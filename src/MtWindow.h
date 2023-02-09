@@ -25,6 +25,7 @@ protected:
 
 private:
   void _CallOption_Exit();
+  void _CallOption_NewTicket();
 
   void _ClrScr();
   void _SavePosition();
