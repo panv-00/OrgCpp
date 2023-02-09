@@ -1,2 +1,2 @@
-# NotesCpp
-My notes taking app.
+# OrgCpp
+My Organizer.

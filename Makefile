@@ -3,5 +3,5 @@ default:
 
 clean:
 	@rm -f build/*.o
-	@rm -f notescpp
+	@rm -f orgcpp
 	@echo "Clean!"

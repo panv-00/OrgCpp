@@ -11,7 +11,7 @@ DEPLIST= \
 	MtInclude.h
 
 default: $(OBJECTS)
-	$(CPP) -o ../notescpp ../src/NotesCpp.cpp \
+	$(CPP) -o ../orgcpp ../src/OrgCpp.cpp \
 		$(OBJECTS) \
 		$(CFLAGS) \
 		$(LIBS)
