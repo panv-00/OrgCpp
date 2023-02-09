@@ -61,6 +61,18 @@
 #define ICO_BAD_ (wchar_t) L'\u2BBF' // Error X
 #define ICO_OKE_ (wchar_t) L'\u2714' // Okey
 
+#define TAB                       9
+#define ESCAPE_CHAR              27
+#define PAGE_UP                  53
+#define PAGE_DN                  54
+#define ARROW_CHAR               91
+#define ARROW_UP                 65
+#define ARROW_DN                 66
+#define ARROW_RT                 67
+#define ARROW_LT                 68
+#define PAGE_UP_DN              126
+#define BACKSPACE               127
+
 typedef enum
 {
   CLR_DEFAULT  =  0    ,

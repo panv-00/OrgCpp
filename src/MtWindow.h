@@ -14,6 +14,15 @@
 class MtWindow
 {
 public:
+  typedef struct
+  {
+    std::string prompt;
+    uint16_t height;
+    uint16_t width;
+    uint16_t max_length;
+
+  } MtInputBox;
+  
   MtWindow();
   ~MtWindow();
 
@@ -28,6 +37,8 @@ private:
   void _CallOption_Exit();
   void _CallOption_Run();
   void _CallOption_NewTicket();
+
+  std::string _GetInputBoxResult(MtWindow::MtInputBox box);
 
   void _ClrScr();
   void _SavePosition();
@@ -56,8 +67,11 @@ private:
     wchar_t  bot_right
   );
 
+
   bool exit_app;
   AppStatus app_status;
+  bool is_getting_input;
+
   struct termios old_term, new_term;
   struct winsize w;
   std::string exit_message;
