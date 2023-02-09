@@ -6,13 +6,16 @@
  */
 
 #include "MtWindow.h"
+#include "MtMenu.h"
 
 void handle_resize(int sig)
 {
-  // TODO
+  // nothing here for now
 }
 
-MtWindow::MtWindow()
+MtWindow::MtWindow() :
+  exit_app      { false },
+  app_has_error { false }
 {
   exit_message = "Application ended peacefully!";
   status_message = std::string(APPNAME) + " v." + APPVERSION;
@@ -27,6 +30,7 @@ MtWindow::MtWindow()
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
   ClearScreen();
+  sleep(1);
 }
 
 MtWindow::~MtWindow()
@@ -54,22 +58,71 @@ void MtWindow::ClearScreen()
     BXT_DLT_, BXT_UDC_, BXT_DRT_
   );
 
- _MoveTo(w.ws_row, 2);
-  wprintf(L"%s, Ready..", status_message.c_str());
+  _MoveTo(w.ws_row, 2);
+
+  if (app_has_error)
+  {
+    _SetColor(CLR_RED_FG);
+    wprintf(L"%lc %lc %lc ", BTN_LFT_, ICO_BAD_, BTN_RGT_);
+    _SetColor(CLR_DEFAULT);
+  }
+
+  else
+  {
+    _SetColor(CLR_GREEN_FG);
+    wprintf(L"%lc %lc %lc ", BTN_LFT_, ICO_OKE_, BTN_RGT_);
+    _SetColor(CLR_DEFAULT);
+  }
+
+  wprintf(L"%s", status_message.c_str());
   _MoveTo(1, 1);
   wprintf(L"\n");
 }
 
 void MtWindow::Run()
 {
+  MtMenu *main_menu = new MtMenu();
+  MtMenu *run_menu = new MtMenu();
+
+  char c = 0;
+
+  run_menu->AddSubMenu
+  (
+    'q',
+    "Quit",
+    std::bind(&MtWindow::_CallOption_Exit, this),
+    nullptr
+  );
+
+  main_menu->AddSubMenu
+  (
+    ':',
+    "Run",
+    nullptr,
+    run_menu
+  );
+
+  MtMenu *cur_menu = main_menu;
+  
   fd_set readfds;
-    
-  while (true)
+
+  while (!exit_app)
   {
-    ClearScreen();
-    _MoveTo(2, 2);
+    status_message = "";
+
+    const std::map<char, MtMenu::MenuOption> &options = cur_menu->getOptions();
+
+    for (const auto &option : options)
+    {
+      status_message.push_back(option.first);
+      status_message += " -> ";
+      status_message += option.second.name;
+    }
+
     FD_ZERO(&readfds);
     FD_SET(STDIN_FILENO, &readfds);
+
+    ClearScreen();
 
     int result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, NULL);
 
@@ -82,20 +135,38 @@ void MtWindow::Run()
     {
       if (FD_ISSET(STDIN_FILENO, &readfds))
       {
-        char c;
-
         if (read(STDIN_FILENO, &c, 1) > 0)
         {
-          if (c == 'q') { break; }
-          status_message = "Pressed: ";
-          status_message.push_back(c);
+          auto it = options.find(c);
+
+          if (it != options.end())
+          {
+            if (it->second.submenu)
+            {
+              cur_menu = it->second.submenu;
+            }
+
+            if (it->second.f)
+            {
+              it->second.f();
+            }
+          }
         }
+        //if (read(STDIN_FILENO, &c, 1) > 0)
+        //{
+        //  if (c == 'q') { exit_app = true; }
+        //}
       }
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+void MtWindow::_CallOption_Exit()
+{
+  exit_app = true;
+}
 
 void MtWindow::_ClrScr()
 {

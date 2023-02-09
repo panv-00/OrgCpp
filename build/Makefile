@@ -5,7 +5,8 @@ LIBS=
 VPATH=../src
 
 OBJECTS= \
-	MtWindow.o
+	MtWindow.o \
+	MtMenu.o
 
 DEPLIST= \
 	MtInclude.h

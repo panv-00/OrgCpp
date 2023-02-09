@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string>
+#include <map>
+#include <functional>
 #include <signal.h>
 #include <sys/select.h>
 
@@ -35,23 +37,26 @@
 #define BOX_UDC_ (wchar_t) L'\u2501'
 #define BOX_RLM_ (wchar_t) L'\u2503'
 
-#define BXT_ULT_ (wchar_t) L'\u250C'
-#define BXT_UMD_ (wchar_t) L'\u252C'
-#define BXT_URT_ (wchar_t) L'\u2510'
-#define BXT_DLT_ (wchar_t) L'\u2514'
-#define BXT_DMD_ (wchar_t) L'\u2534'
-#define BXT_DRT_ (wchar_t) L'\u2518'
-#define BXT_UDC_ (wchar_t) L'\u2500'
-#define BXT_RLM_ (wchar_t) L'\u2502'
+#define BXT_ULT_ (wchar_t) L'\u250C' // Thin Box Border
+#define BXT_UMD_ (wchar_t) L'\u252C' // Thin Box Border
+#define BXT_URT_ (wchar_t) L'\u2510' // Thin Box Border
+#define BXT_DLT_ (wchar_t) L'\u2514' // Thin Box Border
+#define BXT_DMD_ (wchar_t) L'\u2534' // Thin Box Border
+#define BXT_DRT_ (wchar_t) L'\u2518' // Thin Box Border
+#define BXT_UDC_ (wchar_t) L'\u2500' // Thin Box Border
+#define BXT_RLM_ (wchar_t) L'\u2502' // Thin Box Border
 
-#define RDIO_TR_ (wchar_t) L'\u25C9'
-#define RDIO_FL_ (wchar_t) L'\u25CB'
-#define CHCK_TR_ (wchar_t) L'\u25A3'
-#define CHCK_FL_ (wchar_t) L'\u25A1'
-#define ICO_TAB_ (wchar_t) L'\u2B7E'
-#define ICO_RET_ (wchar_t) L'\u2BA0'
-#define ICO_OPN_ (wchar_t) L'\u2397'
-#define ICO_SAV_ (wchar_t) L'\u2398'
+#define RDIO_TR_ (wchar_t) L'\u25C9' // Radiobutton, on
+#define RDIO_FL_ (wchar_t) L'\u25CB' // Radiobutton, off
+#define CHCK_TR_ (wchar_t) L'\u25A3' // Checkbox, checked
+#define CHCK_FL_ (wchar_t) L'\u25A1' // Checkbox, Unchekced
+#define ICO_TAB_ (wchar_t) L'\u2B7E' // [Tab] key
+#define ICO_RET_ (wchar_t) L'\u2BA0' // [Return] key
+#define ICO_OPN_ (wchar_t) L'\u2397' // Open
+#define ICO_SAV_ (wchar_t) L'\u2398' // Save
+#define ICO_HGL_ (wchar_t) L'\u231B' // Hourglass
+#define ICO_BAD_ (wchar_t) L'\u2BBF' // Error X
+#define ICO_OKE_ (wchar_t) L'\u2714' // Okey
 
 typedef enum
 {

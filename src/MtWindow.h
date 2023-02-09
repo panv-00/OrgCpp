@@ -20,9 +20,12 @@ public:
   void ClearScreen();
   void Run();
 
+  void CallOption_1();
 protected:
 
 private:
+  void _CallOption_Exit();
+
   void _ClrScr();
   void _SavePosition();
   void _RestorePosition();
@@ -50,6 +53,8 @@ private:
     wchar_t  bot_right
   );
 
+  bool exit_app;
+  bool app_has_error;
   struct termios old_term, new_term;
   struct winsize w;
   std::string exit_message;
