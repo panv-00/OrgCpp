@@ -9,6 +9,7 @@
 #define MTWINDOW_H
 
 #include "MtInclude.h"
+#include "MtMenu.h"
 
 class MtWindow
 {
@@ -25,6 +26,7 @@ protected:
 
 private:
   void _CallOption_Exit();
+  void _CallOption_Run();
   void _CallOption_NewTicket();
 
   void _ClrScr();
@@ -55,11 +57,15 @@ private:
   );
 
   bool exit_app;
-  bool app_has_error;
+  AppStatus app_status;
   struct termios old_term, new_term;
   struct winsize w;
   std::string exit_message;
   std::string status_message;
+
+  MtMenu *main_menu;
+  MtMenu *run_menu;
+  MtMenu *cur_menu;
     
 };
 

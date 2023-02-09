@@ -22,8 +22,9 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <iomanip>
 
-#define APPNAME     "btcpp"
+#define APPNAME     "  orgcpp"
 #define APPVERSION  "0.0.1"
 
 #define BTN_LFT_ (wchar_t) L'\u28CF'
@@ -82,5 +83,23 @@ typedef enum
   CLR_WHITE_BG
 
 } ColorCode;
+
+typedef enum
+{
+  AS_OK                ,
+  AS_WT                ,
+  AS_ER
+
+} AppStatus;
+
+typedef enum
+{
+  STTS_BCKLG           ,
+  STTS_ONGNG           ,
+  STTS_CMPLT           ,
+  STTS_FROZN           ,
+  STTS_DELTD
+
+} TicketStatus;
 
 #endif

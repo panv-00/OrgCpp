@@ -6,7 +6,6 @@
  */
 
 #include "MtWindow.h"
-#include "MtMenu.h"
 
 void handle_resize(int sig)
 {
@@ -14,8 +13,8 @@ void handle_resize(int sig)
 }
 
 MtWindow::MtWindow() :
-  exit_app      { false },
-  app_has_error { false }
+  exit_app   { false },
+  app_status { AS_OK }
 {
   exit_message = "Application ended peacefully!";
   status_message = std::string(APPNAME) + " v." + APPVERSION;
@@ -28,6 +27,35 @@ MtWindow::MtWindow() :
   signal(SIGWINCH, handle_resize);
 
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  
+  run_menu = new MtMenu();
+  main_menu = new MtMenu();
+
+  run_menu->AddSubMenu
+  (
+    'n',
+    "New Ticket",
+    std::bind(&MtWindow::_CallOption_NewTicket, this),
+    nullptr
+  );
+
+  run_menu->AddSubMenu
+  (
+    'q',
+    "Quit",
+    std::bind(&MtWindow::_CallOption_Exit, this),
+    nullptr
+  );
+
+  main_menu->AddSubMenu
+  (
+    ':',
+    "Run",
+    std::bind(&MtWindow::_CallOption_Run, this),
+    run_menu
+  );
+
+  cur_menu = main_menu;
 
   ClearScreen();
   sleep(1);
@@ -35,6 +63,9 @@ MtWindow::MtWindow() :
 
 MtWindow::~MtWindow()
 {
+  delete run_menu;
+  delete main_menu;
+
   _ClrScr();
   tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
   _ShowCursor();
@@ -58,22 +89,36 @@ void MtWindow::ClearScreen()
     BXT_DLT_, BXT_UDC_, BXT_DRT_
   );
 
-  _MoveTo(w.ws_row, 2);
+  _MoveTo(w.ws_row, w.ws_col - 1);
 
-  if (app_has_error)
+  switch (app_status)
   {
-    _SetColor(CLR_RED_FG);
-    wprintf(L"%lc %lc %lc ", BTN_LFT_, ICO_BAD_, BTN_RGT_);
-    _SetColor(CLR_DEFAULT);
+    case AS_ER:
+    {
+      _SetColor(CLR_RED_FG);
+      wprintf(L"%lc", ICO_BAD_);
+      _SetColor(CLR_DEFAULT);
+
+    } break;
+
+    case AS_OK:
+    {
+      _SetColor(CLR_GREEN_FG);
+      wprintf(L"%lc", ICO_OKE_);
+      _SetColor(CLR_DEFAULT);
+
+    } break;
+
+    case AS_WT:
+    {
+      _SetColor(CLR_YELLOW_FG);
+      wprintf(L"%lc", ICO_HGL_);
+      _SetColor(CLR_DEFAULT);
+
+    } break;
   }
 
-  else
-  {
-    _SetColor(CLR_GREEN_FG);
-    wprintf(L"%lc %lc %lc ", BTN_LFT_, ICO_OKE_, BTN_RGT_);
-    _SetColor(CLR_DEFAULT);
-  }
-
+  _MoveTo(w.ws_row, 1);
   wprintf(L"%s", status_message.c_str());
   _MoveTo(1, 1);
   wprintf(L"\n");
@@ -81,37 +126,7 @@ void MtWindow::ClearScreen()
 
 void MtWindow::Run()
 {
-  MtMenu *main_menu = new MtMenu();
-  MtMenu *run_menu = new MtMenu();
-
   char c = 0;
-
-  run_menu->AddSubMenu
-  (
-    'n',
-    "New Ticket",
-    std::bind(&MtWindow::_CallOption_NewTicket, this),
-    nullptr
-  );
-
-  run_menu->AddSubMenu
-  (
-    'q',
-    "Quit",
-    std::bind(&MtWindow::_CallOption_Exit, this),
-    nullptr
-  );
-
-  main_menu->AddSubMenu
-  (
-    ':',
-    "Run",
-    nullptr,
-    run_menu
-  );
-
-  MtMenu *cur_menu = main_menu;
-  
   fd_set readfds;
 
   while (!exit_app)
@@ -173,9 +188,15 @@ void MtWindow::_CallOption_Exit()
   exit_app = true;
 }
 
+void MtWindow::_CallOption_Run()
+{
+  app_status = AS_WT;
+}
+
 void MtWindow::_CallOption_NewTicket()
 {
-  return;
+  cur_menu = main_menu;
+  app_status = AS_OK;
 }
 
 void MtWindow::_ClrScr()
