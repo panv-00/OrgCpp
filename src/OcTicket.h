@@ -16,11 +16,15 @@ public:
   OcTicket();
   ~OcTicket();
 
+  void SetIndex(uint64_t index);
+  void SetResource(uint64_t resource);
+  void SetName(std::string name);
+
 protected:
 
 private:
   uint64_t index;                  // timestamp at the moment of creation
-  uint64_t ticket_source;          // index to resource
+  uint64_t resource;          // index to resource
   std::string name;
   std::string data;                // formatted text
   uint64_t action_by;              // index to resource

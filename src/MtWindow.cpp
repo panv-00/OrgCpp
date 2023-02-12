@@ -13,13 +13,14 @@ void handle_resize(int sig)
 }
 
 MtWindow::MtWindow() :
-  exit_app         { false },
-  app_status       { AS_OK },
-  is_getting_input { false }
+  exit_app{false},
+  app_status{AS_OK},
+  is_getting_input{false},
+  cur_menu{0}
 {
   exit_message = "Application ended peacefully!";
   status_message = std::string(APPNAME) + " v." + APPVERSION;
-  
+
   tcgetattr(STDIN_FILENO, &old_term);
   new_term = old_term;
   new_term.c_lflag &= ~(ICANON | ECHO);
@@ -28,35 +29,6 @@ MtWindow::MtWindow() :
   signal(SIGWINCH, handle_resize);
 
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-  
-  run_menu = new MtMenu();
-  main_menu = new MtMenu();
-
-  run_menu->AddSubMenu
-  (
-    'n',
-    "New Ticket",
-    std::bind(&MtWindow::_CallOption_NewTicket, this),
-    nullptr
-  );
-
-  run_menu->AddSubMenu
-  (
-    'q',
-    "Quit",
-    std::bind(&MtWindow::_CallOption_Exit, this),
-    nullptr
-  );
-
-  main_menu->AddSubMenu
-  (
-    ':',
-    "Run",
-    std::bind(&MtWindow::_CallOption_Run, this),
-    run_menu
-  );
-
-  cur_menu = main_menu;
 
   ClearScreen();
   sleep(1);
@@ -64,9 +36,6 @@ MtWindow::MtWindow() :
 
 MtWindow::~MtWindow()
 {
-  delete run_menu;
-  delete main_menu;
-
   _ClrScr();
   tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
   _ShowCursor();
@@ -84,10 +53,11 @@ void MtWindow::ClearScreen()
   _ClrScr();
   _draw_rect
   (
-    1, 1, w.ws_row, w.ws_col,
-    BXT_ULT_, BXT_UDC_, BXT_URT_,
-    BXT_RLM_, BXT_RLM_,
-    BXT_DLT_, BXT_UDC_, BXT_DRT_
+      1, 1,
+      w.ws_row, w.ws_col,
+      BXT_ULT_, BXT_UDC_, BXT_URT_,
+      BXT_RLM_, BXT_RLM_,
+      BXT_DLT_, BXT_UDC_, BXT_DRT_
   );
 
   _MoveTo(w.ws_row, w.ws_col - 1);
@@ -125,6 +95,11 @@ void MtWindow::ClearScreen()
   wprintf(L"\n");
 }
 
+void MtWindow::SetMainMenu(MtMenu *menu)
+{
+  main_menu = menu;
+}
+
 void MtWindow::Run()
 {
   char c = 0;
@@ -134,14 +109,15 @@ void MtWindow::Run()
   {
     status_message = "";
 
-    const std::map<char, MtMenu::MenuOption> &options = cur_menu->getOptions();
-
-    for (const auto &option : options)
+    for (size_t i = 0; i < main_menu->GetSize(); i++)
     {
-      status_message += "  ";
-      status_message.push_back(option.first);
-      status_message += " -> ";
-      status_message += option.second.name;
+      if (main_menu->GetOption(i).id == cur_menu)
+      {
+        status_message += "  ";
+        status_message.push_back(main_menu->GetOption(i).accel_key);
+        status_message += " -> ";
+        status_message += main_menu->GetOption(i).name;
+      }
     }
 
     FD_ZERO(&readfds);
@@ -162,18 +138,19 @@ void MtWindow::Run()
       {
         if (read(STDIN_FILENO, &c, 1) > 0)
         {
-          auto it = options.find(c);
-
-          if (it != options.end())
+          for (size_t i = 0; i < main_menu->GetSize(); i++)
           {
-            if (it->second.submenu)
+           if (main_menu->GetOption(i).id == cur_menu)
             {
-              cur_menu = it->second.submenu;
-            }
-
-            if (it->second.f)
-            {
-              it->second.f();
+             if (c == main_menu->GetOption(i).accel_key)
+              {
+                cur_menu = main_menu->GetOption(i).next_menu_id;
+                
+                if (main_menu->GetOption(i).f)
+                {
+                  main_menu->GetOption(i).f(this);
+                }
+              }
             }
           }
         }
@@ -182,61 +159,71 @@ void MtWindow::Run()
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-void MtWindow::_CallOption_Exit()
+void MtWindow::CallOption_Exit()
 {
   exit_app = true;
 }
 
-void MtWindow::_CallOption_Run()
+void MtWindow::CallOption_Run()
 {
   app_status = AS_WT;
-}
-
-void MtWindow::_CallOption_NewTicket()
-{
-  //cur_menu = main_menu;
+  // other stuff
   app_status = AS_OK;
-  MtInputBox box = {"Ticket Name test", 4, 60, 58};
-  _GetInputBoxResult(box);
 }
 
-  
-std::string MtWindow::_GetInputBoxResult(MtInputBox box)
+std::string MtWindow::GetInputBoxResult(MtInputBox box)
 {
+  app_status = AS_WT;
+  
   char c = 0;
   uint16_t cursor_position = 0;
   std::string string_output = "";
 
+  uint16_t height = 6;
+  uint16_t width = box.max_length + 4;
+
+  if (box.prompt.length() > box.max_length)
+  {
+    width = box.prompt.length() + 4;
+  }
+
+  if (width > (w.ws_col - 2))
+  {
+    width = w.ws_col - 2;
+  }
+
+  status_message = (" Getting: " + box.prompt).substr(0, width - 2);
   ClearScreen();
+  
   is_getting_input = true;
+  
   _draw_rect
   (
-    (w.ws_row - box.height) / 2, (w.ws_col - box.width) / 2,
-    box.height + 1, box.width,
-    BOX_ULT_, BOX_UDC_, BOX_URT_,
-    BOX_RLM_, BOX_RLM_,
-    BOX_DLT_, BOX_UDC_, BOX_DRT_
+      (w.ws_row - height) / 2, (w.ws_col - width) / 2 + 1,
+      height + 1, width,
+      BOX_ULT_, BOX_UDC_, BOX_URT_,
+      BOX_RLM_, BOX_RLM_,
+      BOX_DLT_, BOX_UDC_, BOX_DRT_
   );
-  _MoveTo(((w.ws_row - box.height) / 2) + 1, ((w.ws_col - box.width) / 2) + 1);
+  
+  _MoveTo(((w.ws_row - height) / 2) + 1, ((w.ws_col - width) / 2) + 2);
   _SetColor(CLR_GREEN_BG);
   _SetColor(CLR_BLACK_FG);
-  wprintf(L" %s", box.prompt.substr(0, box.width - 3).c_str());
-  
-  for (uint16_t i = 0; i < box.width - box.prompt.length() - 3; i++)
+  wprintf(L" %s", box.prompt.substr(0, width - 4).c_str());
+
+  for (uint16_t i = box.prompt.substr(0, width - 4).length(); i < width - 3; i++)
   {
     wprintf(L" ");
   }
-  
+
   _SetColor(CLR_DEFAULT);
-  _MoveTo(((w.ws_row - box.height) / 2) + 2, ((w.ws_col - box.width) / 2) + 1);
+  _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
   _ShowCursor();
 
   while (is_getting_input)
   {
     c = getwchar();
-    
+
     if (c == '\n')
     {
       is_getting_input = false;
@@ -261,12 +248,18 @@ std::string MtWindow::_GetInputBoxResult(MtInputBox box)
 
         if (c == ARROW_RT)
         {
-          if (cursor_position < string_output.length()) { cursor_position++; }
+          if (cursor_position < string_output.length())
+          {
+            cursor_position++;
+          }
         }
 
         if (c == ARROW_LT)
         {
-          if (cursor_position > 0) { cursor_position--; }
+          if (cursor_position > 0)
+          {
+            cursor_position--;
+          }
         }
       }
     }
@@ -279,113 +272,86 @@ std::string MtWindow::_GetInputBoxResult(MtInputBox box)
         cursor_position++;
       }
     }
-  
-    _MoveTo(((w.ws_row - box.height) / 2) + 2, ((w.ws_col - box.width) / 2) + 1);
+
+    _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
+
+    for (uint16_t i = 0; i < width - 4; i++)
+    {
+      wprintf(L" ");
+    }
+
+    size_t start_at = 0;
+    if (string_output.length() + 4 > width)
+    {
+      start_at = string_output.length() + 4 - width;
+    }
     
-    for (uint16_t i = 0; i < box.width - 2; i++) { wprintf(L" "); }
+    _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
+    wprintf(L"%s", string_output.substr(start_at, string_output.length()).c_str());
+    _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
 
-    _MoveTo(((w.ws_row - box.height) / 2) + 2, ((w.ws_col - box.width) / 2) + 1);
-    wprintf(L"%s", string_output.c_str());
-    _MoveTo(((w.ws_row - box.height) / 2) + 2, ((w.ws_col - box.width) / 2) + 1);
-
-    if (cursor_position > 0) { _MoveRight(cursor_position); }
+    if (cursor_position > start_at)
+    {
+      _MoveRight(cursor_position - start_at);
+    }
   }
 
-  return "";
+  app_status = AS_OK;
+  return string_output;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 void MtWindow::_ClrScr()
 {
   wprintf(L"\033c");
   _HideCursor();
 }
-
-void MtWindow::_SavePosition()
-{
-  wprintf(L"\x1b%d", 7);
-}
-
-void MtWindow::_RestorePosition()
-{
-  wprintf(L"\x1b%d", 8);
-}
-
-void MtWindow::_SetColor(ColorCode cc)
-{
-  wprintf(L"\x1b[%dm", cc);
-}
-
-void MtWindow::_MoveUp(int count)
-{
-  wprintf(L"\x1b[%dA", count);
-}
-
-void MtWindow::_MoveDown(int count)
-{
-  wprintf(L"\x1b[%dB", count);
-}
-
-void MtWindow::_MoveRight(int count)
-{
-  wprintf(L"\x1b[%dC", count);
-}
-
-void MtWindow::_MoveLeft(int count)
-{
-  wprintf(L"\x1b[%dD", count);
-}
-
-void MtWindow::_MoveTo(int r, int c)
-{
-  wprintf(L"\x1b[%d;%df", r, c);
-}
-
-void MtWindow::_HideCursor()
-{
-  wprintf(L"\033[?25l");
-}
-
-void MtWindow::_ShowCursor()
-{
-  wprintf(L"\033[?25h");
-}
+void MtWindow::_SavePosition()         { wprintf(L"\x1b%d", 7);         }
+void MtWindow::_RestorePosition()      { wprintf(L"\x1b%d", 8);         }
+void MtWindow::_SetColor(ColorCode cc) { wprintf(L"\x1b[%dm", cc);      }
+void MtWindow::_MoveUp(int count)      { wprintf(L"\x1b[%dA", count);   }
+void MtWindow::_MoveDown(int count)    { wprintf(L"\x1b[%dB", count);   }
+void MtWindow::_MoveRight(int count)   { wprintf(L"\x1b[%dC", count);   }
+void MtWindow::_MoveLeft(int count)    { wprintf(L"\x1b[%dD", count);   }
+void MtWindow::_MoveTo(int r, int c)   { wprintf(L"\x1b[%d;%df", r, c); }
+void MtWindow::_HideCursor()           { wprintf(L"\033[?25l");         }
+void MtWindow::_ShowCursor()           { wprintf(L"\033[?25h");         }
 
 void MtWindow::_draw_rect
 (
-  uint16_t start_row,
-  uint16_t start_col,
-  uint16_t nrows,
-  uint16_t ncols,
-  wchar_t  top_left,
-  wchar_t  top_center,
-  wchar_t  top_right,
-  wchar_t  mid_left,
-  wchar_t  mid_right,
-  wchar_t  bot_left,
-  wchar_t  bot_center,
-  wchar_t  bot_right
+    uint16_t start_row, uint16_t start_col,
+    uint16_t nrows, uint16_t ncols,
+    wchar_t top_left, wchar_t top_center, wchar_t top_right,
+    wchar_t mid_left, wchar_t mid_right,
+    wchar_t bot_left, wchar_t bot_center, wchar_t bot_right
 )
 {
   _MoveTo(start_row, start_col);
   wprintf(L"%lc", top_left);
-  
-  for(uint16_t i = 1; i < ncols - 1; i++) { wprintf(L"%lc", top_center); }
-  
+
+  for (uint16_t i = 1; i < ncols - 1; i++)
+  {
+    wprintf(L"%lc", top_center);
+  }
+
   wprintf(L"%lc", top_right);
-  
-  for(uint16_t i = start_row + 1; i < start_row + nrows - 2; i++)
+
+  for (uint16_t i = start_row + 1; i < start_row + nrows - 2; i++)
   {
     _MoveTo(i, start_col);
     wprintf(L"%lc", mid_left);
     _MoveTo(i, start_col + ncols - 1);
     wprintf(L"%lc", mid_right);
   }
-  
+
   _MoveTo(start_row + nrows - 2, start_col);
   wprintf(L"%lc", bot_left);
-  
-  for(uint16_t i = 1; i < ncols - 1; i++) { wprintf(L"%lc", bot_center); }
-  
+
+  for (uint16_t i = 1; i < ncols - 1; i++)
+  {
+    wprintf(L"%lc", bot_center);
+  }
+
   wprintf(L"%lc", bot_right);
 }

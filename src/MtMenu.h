@@ -8,41 +8,35 @@
 #ifndef MTMENU_H
 #define MTMENU_H
 
+class MtWindow;
+
 #include "MtInclude.h"
 
 class MtMenu
 {
 public:
-  using Function = std::function<void()>;
+  using Function = std::function<void(MtWindow *)>;
 
   typedef struct
   {
+    uint8_t id;
     char accel_key;
     std::string name;
     Function f;
-    MtMenu *submenu;
+    uint8_t next_menu_id;
 
   } MenuOption;
 
   MtMenu();
   ~MtMenu();
 
-  void AddSubMenu
-  (
-    char accel_key,
-    const std::string &name,
-    Function f,
-    MtMenu *submenu
-  );
-
-  const std::map<char, MenuOption> &getOptions() const;
+  MenuOption GetOption(uint8_t id) { return options[id]; };
+  void AddOption(MenuOption option) { options.push_back(option); };
+  size_t GetSize() { return options.size(); };
 
 protected:
-
 private:
-
-  std::map<char, MenuOption> options;
-
+  std::vector<MenuOption> options;
 };
 
 #endif

@@ -16,13 +16,15 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string>
-#include <map>
+#include <vector>
 #include <functional>
 #include <signal.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <iomanip>
+#include <chrono>
+#include <ctime>
 
 #define APPNAME     "  orgcpp"
 #define APPVERSION  "0.0.1"
@@ -113,5 +115,13 @@ typedef enum
   STTS_DELTD
 
 } TicketStatus;
+
+typedef enum
+{
+  INPUT_TEXT           ,
+  INPUT_SLCT           ,
+  INPUT_DATE
+
+} InputBoxType;
 
 #endif

@@ -8,6 +8,7 @@ OBJECTS=       \
 	MtWindow.o   \
 	MtMenu.o     \
 	OcTicket.o   \
+	OcUtils.o   \
 
 DEPLIST=       \
 	MtInclude.h  \

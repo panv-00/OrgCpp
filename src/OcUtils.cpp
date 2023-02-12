@@ -19,8 +19,9 @@ std::string TimestampToString(uint64_t ts)
 {
   struct tm *timeinfo;
   char buffer[16];
+  time_t tts = (time_t) ts;
 
-  timeinfo = localtime(&ts);
+  timeinfo = localtime(&tts);
   strftime(buffer, sizeof(buffer), "%Y%m%d-%H%M%S", timeinfo);
 
   return std::string(buffer);
