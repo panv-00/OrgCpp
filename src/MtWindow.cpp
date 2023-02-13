@@ -116,7 +116,7 @@ void MtWindow::Run()
       {
         status_message += "  ";
         status_message.push_back(main_menu->GetOption(i).accel_key);
-        status_message += " -> ";
+        status_message += "->";
         status_message += main_menu->GetOption(i).name;
       }
     }
@@ -157,6 +157,7 @@ void MtWindow::CallOption_Run()
 std::string MtWindow::GetInputBoxResult(MtInputBox box)
 {
   app_status = AS_WT;
+  is_getting_input = true;
   
   char c = 0;
   uint16_t cursor_position = 0;
@@ -178,7 +179,6 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
   status_message = (" Getting: " + box.prompt).substr(0, width - 2);
   ClearScreen();
 
-  is_getting_input = true;
 
   _draw_rect
   (

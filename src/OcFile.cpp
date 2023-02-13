@@ -1,24 +1,23 @@
 /*
- * File:   MtFile.cpp
+ * File:   OcFile.cpp
  * Author: Michel Alwan
  *
  * Created on 2023-02-13
  */
 
-#include "MtFile.h"
+#include "OcFile.h"
 
-MtFile::MtFile(const char *base_dir) :
-  base_dir{base_dir}
+OcFile::OcFile()
 {
 
 }
 
-MtFile::~MtFile()
+OcFile::~OcFile()
 {
 
 }
 
-bool MtFile::ConfirmDataLoc()
+bool OcFile::ConfirmDataLoc(const char *dir)
 {
   char *home = getenv("HOME");
 
@@ -28,7 +27,7 @@ bool MtFile::ConfirmDataLoc()
     return false;
   }
 
-  std::string data_dir = std::string(home) + "/" + base_dir;
+  data_dir = std::string(home) + "/" + dir;
   struct stat info;
 
   if (stat(data_dir.c_str(), &info) != 0)
