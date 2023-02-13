@@ -6,6 +6,7 @@
  */
 
 #include "MtWindow.h"
+#include "MtFile.h"
 #include "MtUtils.h"
 #include "OcTicket.h"
 
@@ -27,48 +28,24 @@ int main(int argc, char *argv[])
 {
   setlocale(LC_ALL, "en_US.UTF-8");
 
-  char *home = getenv("HOME");
-
-  if (home == nullptr)
+  MtFile *file = new MtFile(".orgcpp");
+  
+  if (file->ConfirmDataLoc())
   {
-    wprintf(L"Error: Home env variable not set. Exiting now!\n");
-    return 1;
+    MtWindow *win = new MtWindow();
+    MtMenu *menu = new MtMenu();
+
+    menu->AddOption({0, ':', "Run",        CallMenuRun,       1});
+    menu->AddOption({1, 'n', "New Ticket", CallMenuNewTicket, 0});
+    menu->AddOption({1, 'q', "Quit",       CallMenuExit,      0});
+
+    win->SetMainMenu(menu);
+    win->Run();
+
+    delete menu;
+    delete win;
   }
 
-  std::string data_dir = std::string(home) + "/.orgcpp";
-  struct stat info;
-
-  if (stat(data_dir.c_str(), &info) != 0)
-  {
-    int status = mkdir(data_dir.c_str(), 0700);
-
-    if (status != 0)
-    {
-      wprintf(L"Error: Unable to create directory %s. ", data_dir.c_str());
-      wprintf(L"Exiting now!\n");
-      return 1;
-    }
-  }
-
-  else if (!S_ISDIR(info.st_mode))
-  {
-    wprintf(L"Error: %s exists, but is not a directory. ", data_dir.c_str());
-    wprintf(L"Exiting now!\n");
-    return 1;
-  }
-
-  MtWindow *win = new MtWindow();
-  MtMenu *menu = new MtMenu();
-
-  menu->AddOption({0, ':', "Run",        CallMenuRun,       1});
-  menu->AddOption({1, 'n', "New Ticket", CallMenuNewTicket, 0});
-  menu->AddOption({1, 'q', "Quit",       CallMenuExit,      0});
-
-  win->SetMainMenu(menu);
-  win->Run();
-
-  delete menu;
-  delete win;
-
+  delete file;
   return 0;
 }

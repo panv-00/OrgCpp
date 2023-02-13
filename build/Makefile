@@ -8,6 +8,7 @@ OBJECTS=       \
 	MtWindow.o   \
 	MtMenu.o     \
 	MtUtils.o    \
+	MtFile.o     \
 	OcTicket.o   \
 
 DEPLIST=       \
