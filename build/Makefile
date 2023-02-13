@@ -7,8 +7,8 @@ VPATH=../src
 OBJECTS=       \
 	MtWindow.o   \
 	MtMenu.o     \
+	MtUtils.o    \
 	OcTicket.o   \
-	OcUtils.o   \
 
 DEPLIST=       \
 	MtInclude.h  \

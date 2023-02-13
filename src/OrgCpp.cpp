@@ -6,8 +6,8 @@
  */
 
 #include "MtWindow.h"
+#include "MtUtils.h"
 #include "OcTicket.h"
-#include "OcUtils.h"
 
 void CallMenuExit(MtWindow *win) { win->CallOption_Exit(); }
 void CallMenuRun(MtWindow *win)  { win->CallOption_Run();  }
