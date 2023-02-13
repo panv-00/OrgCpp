@@ -6,6 +6,7 @@
  */
 
 #include "MtWindow.h"
+#include "MtUtils.h"
 
 void handle_resize(int sig)
 {
@@ -16,6 +17,8 @@ MtWindow::MtWindow() :
   exit_app{false},
   app_status{AS_OK},
   is_getting_input{false},
+  term_min_height{25},
+  term_min_width{80},
   cur_menu{0}
 {
   exit_message = "Application ended peacefully!";
@@ -27,8 +30,6 @@ MtWindow::MtWindow() :
   tcsetattr(STDIN_FILENO, TCSANOW, &new_term);
 
   signal(SIGWINCH, handle_resize);
-
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
   ClearScreen();
   sleep(1);
@@ -50,6 +51,7 @@ void MtWindow::SetExitMessage(std::string exit_message)
 
 void MtWindow::ClearScreen()
 {
+  _CheckTermSize();
   _ClrScr();
   _draw_rect
   (
@@ -103,7 +105,6 @@ void MtWindow::SetMainMenu(MtMenu *menu)
 void MtWindow::Run()
 {
   char c = 0;
-  fd_set readfds;
 
   while (!exit_app)
   {
@@ -120,38 +121,20 @@ void MtWindow::Run()
       }
     }
 
-    FD_ZERO(&readfds);
-    FD_SET(STDIN_FILENO, &readfds);
-
     ClearScreen();
+    c = _Getch();
 
-    int result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, NULL);
-
-    if (result < 0)
+    for (size_t i = 0; i < main_menu->GetSize(); i++)
     {
-      ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    }
-
-    else if (result > 0)
-    {
-      if (FD_ISSET(STDIN_FILENO, &readfds))
+      if (main_menu->GetOption(i).id == cur_menu)
       {
-        if (read(STDIN_FILENO, &c, 1) > 0)
+        if (c == main_menu->GetOption(i).accel_key)
         {
-          for (size_t i = 0; i < main_menu->GetSize(); i++)
+          cur_menu = main_menu->GetOption(i).next_menu_id;
+
+          if (main_menu->GetOption(i).f)
           {
-           if (main_menu->GetOption(i).id == cur_menu)
-            {
-             if (c == main_menu->GetOption(i).accel_key)
-              {
-                cur_menu = main_menu->GetOption(i).next_menu_id;
-                
-                if (main_menu->GetOption(i).f)
-                {
-                  main_menu->GetOption(i).f(this);
-                }
-              }
-            }
+            main_menu->GetOption(i).f(this);
           }
         }
       }
@@ -167,7 +150,7 @@ void MtWindow::CallOption_Exit()
 void MtWindow::CallOption_Run()
 {
   app_status = AS_WT;
-  // other stuff
+  ClearScreen();
   app_status = AS_OK;
 }
 
@@ -194,9 +177,9 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
 
   status_message = (" Getting: " + box.prompt).substr(0, width - 2);
   ClearScreen();
-  
+
   is_getting_input = true;
-  
+
   _draw_rect
   (
       (w.ws_row - height) / 2, (w.ws_col - width) / 2 + 1,
@@ -262,6 +245,12 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
           }
         }
       }
+
+      else
+      {
+        string_output = "";
+        is_getting_input = false;
+      }
     }
 
     else if (c >= ' ' && c <= '~')
@@ -285,7 +274,7 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
     {
       start_at = string_output.length() + 4 - width;
     }
-    
+
     _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
     wprintf(L"%s", string_output.substr(start_at, string_output.length()).c_str());
     _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
@@ -302,6 +291,52 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+char MtWindow::_Getch()
+{
+  char c = 0;
+  fd_set readfds;
+  
+  FD_ZERO(&readfds);
+  FD_SET(STDIN_FILENO, &readfds);
+
+  int result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, NULL);
+
+  if (result < 0)
+  {
+    ClearScreen();
+  }
+
+  else if (result > 0)
+  {
+    if (FD_ISSET(STDIN_FILENO, &readfds))
+    {
+      if (read(STDIN_FILENO, &c, 1) > 0)
+      {
+        return c;
+      }
+    }
+  }
+  return c;
+}
+
+void MtWindow::_CheckTermSize()
+{
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  
+  if (w.ws_col < term_min_width)
+  {
+    exit_message = "App Cannot Continue. Term Width = " +
+      Uint64_TToString(w.ws_col) + " < " + Uint64_TToString(term_min_width);
+    exit_app = true;
+  }
+
+  if (w.ws_row < term_min_height)
+  {
+    exit_message = "App Cannot Continue. Term Height = " +
+      Uint64_TToString(w.ws_row) + " < " + Uint64_TToString(term_min_height);
+    exit_app = true;
+  }
+}
 void MtWindow::_ClrScr()
 {
   wprintf(L"\033c");

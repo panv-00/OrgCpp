@@ -37,6 +37,8 @@ public:
 protected:
 private:
 
+  char _Getch();
+  void _CheckTermSize();
   void _ClrScr();
   void _SavePosition();
   void _RestorePosition();
@@ -65,6 +67,8 @@ private:
   struct winsize w;
   std::string exit_message;
   std::string status_message;
+  uint16_t term_min_height;
+  uint16_t term_min_width;
 
   MtMenu *main_menu;
   size_t cur_menu;
