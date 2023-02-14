@@ -17,21 +17,25 @@ public:
   ~OcTicket();
 
   void SetIndex(uint64_t index);
-  void SetResource(uint64_t resource);
+  void SetGroup(uint64_t group);
   void SetName(std::string name);
+
+  uint64_t GetId();
+  uint64_t GetGroup();
+  std::string GetName();
 
 protected:
 
 private:
-  uint64_t index;                  // timestamp at the moment of creation
-  uint64_t resource;          // index to resource
+  uint64_t index;
+  uint64_t group;
   std::string name;
-  std::string data;                // formatted text
-  uint64_t action_by;              // index to resource
-  TicketStatus status;
-  uint64_t start;                  // start timestamp
-  uint64_t deadline;               // deadline timestamp
-  uint64_t end;                    // end timestamp
+  std::vector<std::string> data;
+  std::vector<uint64_t> action_by;
+  std::vector<TicketStatus> status;
+  uint64_t start;
+  uint64_t deadline;
+  uint64_t end;
   std::vector<std::string> attach;
 };
 

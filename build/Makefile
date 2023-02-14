@@ -10,6 +10,7 @@ OBJECTS=       \
 	MtUtils.o    \
 	OcFile.o     \
 	OcTicket.o   \
+	OcGroup.o   \
 
 DEPLIST=       \
 	MtInclude.h  \

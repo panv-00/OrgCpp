@@ -10,6 +10,9 @@
 
 #include "MtInclude.h"
 #include "MtMenu.h"
+#include <vector>
+
+class OrgCpp;
 
 class MtWindow
 {
@@ -25,17 +28,29 @@ public:
   MtWindow();
   ~MtWindow();
 
+  void SetParent(OrgCpp *app) { parent = app; };
+  OrgCpp *GetParent() { return parent; };
+
   void SetExitMessage(std::string exit_message);
+  void ClearScreenContent();
+  void AppendScreenContent(std::string content);
+  
   void ClearScreen();
   void SetMainMenu(MtMenu *menu);
   void Run();
 
   void CallOption_Exit();
   void CallOption_Run();
-  std::string GetInputBoxResult(MtWindow::MtInputBox box);
+  bool GetInputBoxResult
+  (
+      MtWindow::MtInputBox box,
+      InputBoxType type,
+      std::string &result
+  );
 
 protected:
 private:
+  OrgCpp *parent;
 
   char _Getch();
   void _CheckTermSize();
@@ -72,6 +87,8 @@ private:
 
   MtMenu *main_menu;
   size_t cur_menu;
+
+  std::vector<std::string> screen_content;
 };
 
 #endif

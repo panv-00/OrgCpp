@@ -51,3 +51,100 @@ bool OcFile::ConfirmDataLoc(const char *dir)
 
   return true;
 }
+
+bool OcFile::SaveTicketToFile(OcTicket *ticket)
+{
+  _ReadTicketsFromFile();
+  
+  bool ticketExists = false;
+  
+  for (size_t i = 0; i < tickets.size(); i++)
+  {
+    if (tickets[i].GetId() == ticket->GetId())
+    {
+      tickets[i].SetGroup(ticket->GetGroup());
+      tickets[i].SetName(ticket->GetName());
+      ticketExists = true;
+      break;
+    }
+  }
+
+  if (!ticketExists)
+  {
+    tickets.push_back(*ticket);
+  }
+
+  return _WriteTicketsToFile();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OcFile::_ReadTicketsFromFile()
+{
+  tickets.clear();
+  std::ifstream file(data_dir + "/tickets.bin", std::ios::binary);
+
+  if (file.is_open())
+  {
+    OcTicket tkt;
+    uint64_t index;
+    uint64_t group;
+    std::string name;
+    size_t size;
+
+    file.read(reinterpret_cast<char *>(&size), sizeof(std::size_t));
+
+    for (size_t i = 0; i < size; ++i)
+    {
+      file.read(reinterpret_cast<char *>(&index), sizeof(uint64_t));
+      file.read(reinterpret_cast<char *>(&group), sizeof(uint64_t));
+      size_t name_size;
+      file.read(reinterpret_cast<char *>(&name_size), sizeof(size_t));
+      char *name_buf = new char[name_size];
+      file.read(name_buf, name_size);
+
+      name.assign(name_buf, name_size);
+      delete[] name_buf;
+
+      tkt.SetIndex(index);
+      tkt.SetGroup(group);
+      tkt.SetName(name);
+      tickets.push_back(tkt);
+    }
+
+    file.close();
+  }
+}
+
+bool OcFile::_WriteTicketsToFile()
+{
+  std::ofstream file(data_dir + "/tickets.bin", std::ios::binary);
+
+  if (file.is_open())
+  {
+    uint64_t index;
+    uint64_t group;
+    std::string name;
+    size_t size = tickets.size();
+
+    file.write(reinterpret_cast<char *>(&size), sizeof(size_t));
+
+    for (auto &ticket : tickets)
+    {
+      index = ticket.GetId();
+      group = ticket.GetGroup();
+      name  = ticket.GetName();
+      size_t name_size = name.size();
+
+      file.write(reinterpret_cast<char *>(&index), sizeof(uint64_t));
+      file.write(reinterpret_cast<char *>(&group), sizeof(uint64_t));
+      file.write(reinterpret_cast<char *>(&name_size), sizeof(size_t));
+      file.write(name.c_str(), name_size);
+    }
+
+    file.close();
+    return true;
+  }
+
+  return false;
+}

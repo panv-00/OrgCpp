@@ -6,6 +6,7 @@
  */
 
 #include "MtWindow.h"
+#include "MtInclude.h"
 #include "MtUtils.h"
 
 void handle_resize(int sig)
@@ -23,6 +24,7 @@ MtWindow::MtWindow() :
 {
   exit_message = "Application ended peacefully!";
   status_message = std::string(APPNAME) + " v." + APPVERSION;
+  screen_content.clear();
 
   tcgetattr(STDIN_FILENO, &old_term);
   new_term = old_term;
@@ -49,6 +51,16 @@ void MtWindow::SetExitMessage(std::string exit_message)
   this->exit_message = exit_message;
 }
 
+void MtWindow::ClearScreenContent()
+{
+  this->screen_content.clear();
+}
+
+void MtWindow::AppendScreenContent(std::string content)
+{
+  this->screen_content.push_back(content);
+}
+
 void MtWindow::ClearScreen()
 {
   _CheckTermSize();
@@ -61,6 +73,13 @@ void MtWindow::ClearScreen()
       BXT_RLM_, BXT_RLM_,
       BXT_DLT_, BXT_UDC_, BXT_DRT_
   );
+
+  // Print screen_content if not empty
+  for (size_t i = 0; i < screen_content.size(); ++i)
+  {
+    _MoveTo(i + 3, 3);
+    wprintf(L"%s", screen_content[i].c_str());
+  }
 
   _MoveTo(w.ws_row, w.ws_col - 1);
 
@@ -114,10 +133,11 @@ void MtWindow::Run()
     {
       if (main_menu->GetOption(i).id == cur_menu)
       {
-        status_message += "  ";
+        status_message += "(";
         status_message.push_back(main_menu->GetOption(i).accel_key);
         status_message += "->";
         status_message += main_menu->GetOption(i).name;
+        status_message += ") ";
       }
     }
 
@@ -150,18 +170,24 @@ void MtWindow::CallOption_Exit()
 void MtWindow::CallOption_Run()
 {
   app_status = AS_WT;
+  ClearScreenContent();
   ClearScreen();
   app_status = AS_OK;
 }
 
-std::string MtWindow::GetInputBoxResult(MtInputBox box)
+bool MtWindow::GetInputBoxResult
+(
+  MtInputBox box,
+  InputBoxType type,
+  std::string &result
+)
 {
   app_status = AS_WT;
   is_getting_input = true;
   
   char c = 0;
   uint16_t cursor_position = 0;
-  std::string string_output = "";
+  result = "";
 
   uint16_t height = 6;
   uint16_t width = box.max_length + 4;
@@ -177,8 +203,26 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
   }
 
   status_message = (" Getting: " + box.prompt).substr(0, width - 2);
-  ClearScreen();
+  switch (type)
+  {
+    case INPUT_TEXT:
+      {
+        status_message = "Input Text";
 
+      } break;
+    case INPUT_DATE:
+      {
+        status_message = "Date Format YYYYMMDD";
+
+      } break;
+    case INPUT_SLCT:
+      {
+        status_message = "Select / New";
+
+      } break;
+  }
+
+  ClearScreen();
 
   _draw_rect
   (
@@ -217,7 +261,7 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
       if (cursor_position > 0)
       {
         cursor_position--;
-        string_output.erase(cursor_position, 1);
+        result.erase(cursor_position, 1);
       }
     }
 
@@ -231,7 +275,7 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
 
         if (c == ARROW_RT)
         {
-          if (cursor_position < string_output.length())
+          if (cursor_position < result.length())
           {
             cursor_position++;
           }
@@ -248,16 +292,17 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
 
       else
       {
-        string_output = "";
-        is_getting_input = false;
+        app_status = AS_OK;
+        result = "";
+        return false;
       }
     }
 
     else if (c >= ' ' && c <= '~')
     {
-      if (string_output.length() < box.max_length)
+      if (result.length() < box.max_length)
       {
-        string_output.insert(cursor_position, 1, c);
+        result.insert(cursor_position, 1, c);
         cursor_position++;
       }
     }
@@ -270,13 +315,13 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
     }
 
     size_t start_at = 0;
-    if (string_output.length() + 4 > width)
+    if (result.length() + 4 > width)
     {
-      start_at = string_output.length() + 4 - width;
+      start_at = result.length() + 4 - width;
     }
 
     _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
-    wprintf(L"%s", string_output.substr(start_at, string_output.length()).c_str());
+    wprintf(L"%s", result.substr(start_at, result.length()).c_str());
     _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
 
     if (cursor_position > start_at)
@@ -285,8 +330,11 @@ std::string MtWindow::GetInputBoxResult(MtInputBox box)
     }
   }
 
+  status_message = " Press any key to exit...";
+  ClearScreen();
   app_status = AS_OK;
-  return string_output;
+  
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -316,6 +364,7 @@ char MtWindow::_Getch()
       }
     }
   }
+  
   return c;
 }
 

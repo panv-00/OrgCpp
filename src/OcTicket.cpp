@@ -22,9 +22,9 @@ void OcTicket::SetIndex(uint64_t index)
   this->index = index;
 }
 
-void OcTicket::SetResource(uint64_t resource)
+void OcTicket::SetGroup(uint64_t group)
 {
-  this->resource = resource;
+  this->group = group;
 }
 
 void OcTicket::SetName(std::string name)
@@ -32,4 +32,17 @@ void OcTicket::SetName(std::string name)
   this->name = name;
 }
 
+uint64_t OcTicket::GetId()
+{
+  return index;
+}
 
+uint64_t OcTicket::GetGroup()
+{
+  return group;
+}
+
+std::string OcTicket::GetName()
+{
+  return name;
+}
