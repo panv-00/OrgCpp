@@ -1,4 +1,4 @@
-/*
+/**
  * File:   OrgCpp.cpp
  * Author: Michel Alwan
  *
@@ -13,7 +13,9 @@ OrgCpp::OrgCpp()
   ocfile = new OcFile();
   menu = new MtMenu();
   win = new MtWindow();
+  
   win->SetParent(this);
+  win->SetMainMenu(menu);
 }
 
 OrgCpp::~OrgCpp()
@@ -24,19 +26,17 @@ OrgCpp::~OrgCpp()
   delete win;
 }
 
-bool OrgCpp::SaveTicketToFile()
+// menu functions /////////////////////////////////////////////////////////////
+
+void OrgCpp::CallMenuRun()
 {
-  return ocfile->SaveTicketToFile(ticket);
+  win->CallOption_Run();
 }
 
-void CallMenuExit(MtWindow *win) { win->CallOption_Exit(); }
-
-void CallMenuRun(MtWindow *win)  { win->CallOption_Run();  }
-
-void CallMenuNewTicket(MtWindow *win)
+void OrgCpp::CallMenuNewTicket()
 {
-  OcTicket *ticket = win->GetParent()->GetTicket();
-  MtWindow::MtInputBox box;
+  std::vector<MtPair> select_options;
+  MtInputBox box;
   std::string temp_string = "";
   bool retry_loop = true;
 
@@ -47,21 +47,34 @@ void CallMenuNewTicket(MtWindow *win)
 
   while (retry_loop)
   {
-    retry_loop = !win->GetInputBoxResult(box, INPUT_TEXT, temp_string);
+    retry_loop = !win->GetInputBoxResult
+                 (
+                   box, INPUT_TEXT, select_options, temp_string
+                 );
   }
+
+  CleanString(temp_string);
 
   ticket->SetName(temp_string);
   win->ClearScreenContent();
-  win->AppendScreenContent("Group:      " + Uint64_TToString(ticket->GetGroup()));
-  win->AppendScreenContent("TicketID:   " + Uint64_TToString(ticket->GetId()));
-  win->AppendScreenContent("TicketName: " + ticket->GetName());
+  win->AppendScreenContent
+    ("Group:      " + Uint64_TToString(ticket->GetGroup()));
+  win->AppendScreenContent
+    ("TicketID:   " + Uint64_TToString(ticket->GetId()));
+  win->AppendScreenContent
+    ("TicketName: " + ticket->GetName());
 }
 
-void CallMenuConfSaveTicket(MtWindow *win)
+void OrgCpp::CallMenuExit()
+{
+  win->CallOption_Exit();
+}
+
+void OrgCpp::CallMenuConfSaveTicket()
 {
   win->ClearScreenContent();
   
-  if (win->GetParent()->SaveTicketToFile())
+  if (_SaveTicketToFile())
   {
     win->AppendScreenContent("Record Saved Successfully.");
   }
@@ -72,11 +85,37 @@ void CallMenuConfSaveTicket(MtWindow *win)
   }
 }
 
-void CallMenuConfirmFalse(MtWindow *win)
+void OrgCpp::CallMenuConfirmFalse()
 {
   win->ClearScreenContent();
   win->AppendScreenContent("Record Discarded.");
 }
+
+// Public  Functions //////////////////////////////////////////////////////////
+
+bool OrgCpp::ConfirmFileDataLoc(const char *d)
+{
+  return ocfile->ConfirmDataLoc(d);
+}
+
+void OrgCpp::AddMenuOption(MenuOption option)
+{
+  menu->AddOption(option);
+}
+
+void OrgCpp::RunApp()
+{
+  win->Run();
+}
+
+// Private Functions //////////////////////////////////////////////////////////
+
+bool OrgCpp::_SaveTicketToFile()
+{
+  return ocfile->SaveTicketToFile(ticket);
+}
+
+// INT MAIN ///////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[])
 {
@@ -86,13 +125,50 @@ int main(int argc, char *argv[])
 
   if (app->ConfirmFileDataLoc(".orgcpp"))
   {
-    app->AddMenuOption({0,  ':', "Run",         CallMenuRun,            1});
-    app->AddMenuOption({1,  'n', "New Ticket",  CallMenuNewTicket,     11});
-    app->AddMenuOption({1,  'q', "Quit",        CallMenuExit,           0});
-    app->AddMenuOption({11, 's', "Save Ticket", CallMenuConfSaveTicket, 0});
-    app->AddMenuOption({11, 'c', "Cancel",      CallMenuConfirmFalse,   0});
+    app->AddMenuOption
+    (
+      {
+        0, ':', "Run", 1,
+        [](void *instance)
+          { static_cast<OrgCpp *>(instance)->CallMenuRun(); }, app
+      }
+    );
 
-    app->SetAppMainMenu(app->GetMenu());
+    app->AddMenuOption
+    (
+      {
+        1, 'n', "New Ticket", 11,
+        [](void *instance)
+          { static_cast<OrgCpp *>(instance)->CallMenuNewTicket(); }, app
+      }
+    );
+
+    app->AddMenuOption
+    (
+      {
+        1, 'q', "Quit", 0,
+        [](void *instance)
+          { static_cast<OrgCpp *>(instance)->CallMenuExit(); }, app
+      }
+    );
+
+    app->AddMenuOption
+    (
+      {
+        11, 's', "Save Ticket", 0,
+        [](void *instance)
+          { static_cast<OrgCpp *>(instance)->CallMenuConfSaveTicket(); }, app
+      }
+    );
+
+    app->AddMenuOption
+    (
+      {
+        11, 'c', "Cancel", 0,
+        [](void *instance)
+          { static_cast<OrgCpp *>(instance)->CallMenuConfirmFalse(); }, app
+      }
+    );
 
     app->RunApp();
   }

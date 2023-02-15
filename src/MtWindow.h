@@ -1,4 +1,4 @@
-/*
+/**
  * File:   MtWindow.h
  * Author: Michel Alwan
  *
@@ -8,23 +8,13 @@
 #ifndef MTWINDOW_H
 #define MTWINDOW_H
 
-#include "MtInclude.h"
 #include "MtMenu.h"
-#include <vector>
 
 class OrgCpp;
 
 class MtWindow
 {
 public:
-  typedef struct
-  {
-    std::string prompt;
-    uint16_t max_length;
-    InputBoxType type;
-
-  } MtInputBox;
-
   MtWindow();
   ~MtWindow();
 
@@ -43,9 +33,10 @@ public:
   void CallOption_Run();
   bool GetInputBoxResult
   (
-      MtWindow::MtInputBox box,
-      InputBoxType type,
-      std::string &result
+    MtInputBox box,
+    InputBoxType type,
+    std::vector<MtPair> select_options,
+    std::string &result
   );
 
 protected:

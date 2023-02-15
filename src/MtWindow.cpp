@@ -1,4 +1,4 @@
-/*
+/**
  * File:   MtWindow.cpp
  * Author: Michel Alwan
  *
@@ -81,6 +81,7 @@ void MtWindow::ClearScreen()
     wprintf(L"%s", screen_content[i].c_str());
   }
 
+  // Print status icon
   _MoveTo(w.ws_row, w.ws_col - 1);
 
   switch (app_status)
@@ -125,8 +126,10 @@ void MtWindow::Run()
 {
   char c = 0;
 
+  // Loop till exit
   while (!exit_app)
   {
+    // Put Menu in status_message
     status_message = "";
 
     for (size_t i = 0; i < main_menu->GetSize(); i++)
@@ -144,6 +147,7 @@ void MtWindow::Run()
     ClearScreen();
     c = _Getch();
 
+    // Save next menu, and execute current menu method
     for (size_t i = 0; i < main_menu->GetSize(); i++)
     {
       if (main_menu->GetOption(i).id == cur_menu)
@@ -154,7 +158,7 @@ void MtWindow::Run()
 
           if (main_menu->GetOption(i).f)
           {
-            main_menu->GetOption(i).f(this);
+            main_menu->GetOption(i).f(parent);
           }
         }
       }
@@ -179,16 +183,25 @@ bool MtWindow::GetInputBoxResult
 (
   MtInputBox box,
   InputBoxType type,
+  std::vector<MtPair> select_options,
   std::string &result
 )
 {
   app_status = AS_WT;
   is_getting_input = true;
-  
+
   char c = 0;
   uint16_t cursor_position = 0;
   result = "";
 
+  status_message = "Input Text";
+
+  if (type == INPUT_DATE)
+  {
+    status_message += ": YYYYMMDD";
+  }
+
+  // Setup preliminary input box dimensions
   uint16_t height = 6;
   uint16_t width = box.max_length + 4;
 
@@ -202,37 +215,24 @@ bool MtWindow::GetInputBoxResult
     width = w.ws_col - 2;
   }
 
-  status_message = (" Getting: " + box.prompt).substr(0, width - 2);
-  switch (type)
+  if (type == INPUT_SLCT)
   {
-    case INPUT_TEXT:
-      {
-        status_message = "Input Text";
-
-      } break;
-    case INPUT_DATE:
-      {
-        status_message = "Date Format YYYYMMDD";
-
-      } break;
-    case INPUT_SLCT:
-      {
-        status_message = "Select / New";
-
-      } break;
+    status_message = "Select / New";
+    height = 15;
   }
 
   ClearScreen();
 
   _draw_rect
   (
-      (w.ws_row - height) / 2, (w.ws_col - width) / 2 + 1,
-      height + 1, width,
-      BOX_ULT_, BOX_UDC_, BOX_URT_,
-      BOX_RLM_, BOX_RLM_,
-      BOX_DLT_, BOX_UDC_, BOX_DRT_
+    (w.ws_row - height) / 2, (w.ws_col - width) / 2 + 1,
+    height + 1, width,
+    BOX_ULT_, BOX_UDC_, BOX_URT_,
+    BOX_RLM_, BOX_RLM_,
+    BOX_DLT_, BOX_UDC_, BOX_DRT_
   );
-  
+
+  // Box Title
   _MoveTo(((w.ws_row - height) / 2) + 1, ((w.ws_col - width) / 2) + 2);
   _SetColor(CLR_GREEN_BG);
   _SetColor(CLR_BLACK_FG);
@@ -244,6 +244,8 @@ bool MtWindow::GetInputBoxResult
   }
 
   _SetColor(CLR_DEFAULT);
+
+  // Setup Cursor at input location
   _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
   _ShowCursor();
 
@@ -251,11 +253,10 @@ bool MtWindow::GetInputBoxResult
   {
     c = getwchar();
 
-    if (c == '\n')
-    {
-      is_getting_input = false;
-    }
+    // Exit on Enter
+    if (c == '\n') { is_getting_input = false; }
 
+    // Delete char on backspace
     else if (c == BACKSPACE)
     {
       if (cursor_position > 0)
@@ -265,6 +266,7 @@ bool MtWindow::GetInputBoxResult
       }
     }
 
+    // Handle arrow keys
     else if (c == ESCAPE_CHAR)
     {
       c = getwchar();
@@ -275,22 +277,17 @@ bool MtWindow::GetInputBoxResult
 
         if (c == ARROW_RT)
         {
-          if (cursor_position < result.length())
-          {
-            cursor_position++;
-          }
+          if (cursor_position < result.length()) { cursor_position++; }
         }
 
         if (c == ARROW_LT)
         {
-          if (cursor_position > 0)
-          {
-            cursor_position--;
-          }
+          if (cursor_position > 0) { cursor_position--; }
         }
       }
 
-      else
+      // Cancel on escape key (twice)
+      else if (c == ESCAPE_CHAR)
       {
         app_status = AS_OK;
         result = "";
@@ -298,7 +295,12 @@ bool MtWindow::GetInputBoxResult
       }
     }
 
-    else if (c >= ' ' && c <= '~')
+    // Add chars to result
+    else if (
+      (type == INPUT_TEXT && c >= ' ' && c <= '~') ||
+      (type == INPUT_SLCT && c >= ' ' && c <= '~') ||
+      (type == INPUT_DATE && c >= '0' && c <= '9')
+    )
     {
       if (result.length() < box.max_length)
       {
@@ -307,6 +309,7 @@ bool MtWindow::GetInputBoxResult
       }
     }
 
+    // Display result
     _MoveTo(((w.ws_row - height) / 2) + 3, ((w.ws_col - width) / 2) + 3);
 
     for (uint16_t i = 0; i < width - 4; i++)
@@ -330,10 +333,7 @@ bool MtWindow::GetInputBoxResult
     }
   }
 
-  status_message = " Press any key to exit...";
-  ClearScreen();
   app_status = AS_OK;
-  
   return true;
 }
 

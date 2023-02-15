@@ -1,4 +1,4 @@
-/*
+/**
  * File:   MtMenu.h
  * Author: Michel Alwan
  *
@@ -8,25 +8,11 @@
 #ifndef MTMENU_H
 #define MTMENU_H
 
-class MtWindow;
-
 #include "MtInclude.h"
 
 class MtMenu
 {
 public:
-  using Function = std::function<void(MtWindow *)>;
-
-  typedef struct
-  {
-    uint8_t id;
-    char accel_key;
-    std::string name;
-    Function f;
-    uint8_t next_menu_id;
-
-  } MenuOption;
-
   MtMenu();
   ~MtMenu();
 

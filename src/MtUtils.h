@@ -1,4 +1,4 @@
-/*
+/**
  * File:   OcUtils.h
  * Author: Michel Alwan
  *
@@ -10,6 +10,7 @@
 
 #include "MtInclude.h"
 
+void CleanString(std::string &input);
 uint64_t Now();
 std::string TimestampToString(uint64_t ts);
 std::string SizeTToString(size_t value);

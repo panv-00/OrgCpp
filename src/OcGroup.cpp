@@ -1,4 +1,4 @@
-/*
+/**
  * File:   OcGroup.cpp
  * Author: Michel Alwan
  *

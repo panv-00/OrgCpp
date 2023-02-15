@@ -12,33 +12,27 @@
 #include "MtUtils.h"
 #include "OcFile.h"
 #include "OcTicket.h"
-#include <vector>
-
-void CallMenuExit(MtWindow *win);
-void CallMenuRun(MtWindow *win);
-void CallMenuNewTicket(MtWindow *win);
-void CallMenuConfirmTrue(MtWindow *win);
-void CallMenuConfirmFalse(MtWindow *win);
 
 class OrgCpp
 {
 public:
+
   OrgCpp();
   ~OrgCpp();
 
-  bool SaveTicketToFile();
+  void CallMenuRun();
+  void CallMenuNewTicket();
+  void CallMenuExit();
+  void CallMenuConfSaveTicket();
+  void CallMenuConfirmFalse();
 
-  bool ConfirmFileDataLoc(const char *d) { return ocfile->ConfirmDataLoc(d); };
-  void AddMenuOption(MtMenu::MenuOption option) { menu->AddOption(option); };
-  void SetAppMainMenu(MtMenu *menu) { win->SetMainMenu(menu); };
-  void RunApp() { win->Run(); };
-
-  OcTicket *GetTicket() { return ticket;}
-  MtMenu *GetMenu() { return menu; };
-  MtWindow *GetWin() { return win; };
-
+  bool ConfirmFileDataLoc(const char *d);
+  void AddMenuOption(MenuOption option);
+  void RunApp();
 
 private:
+  bool _SaveTicketToFile();
+  
   OcTicket *ticket;
   OcFile *ocfile;
   MtMenu *menu;

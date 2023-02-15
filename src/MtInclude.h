@@ -1,4 +1,4 @@
-/*
+/**
  * File:   MtInclude.h
  * Author: Michel Alwan
  *
@@ -26,6 +26,8 @@
 #include <chrono>
 #include <ctime>
 #include <fstream>
+
+///////////////////////////////////////////////////////////////////////////////
 
 #define APPNAME     "  orgcpp"
 #define APPVERSION  "0.0.1"
@@ -76,6 +78,8 @@
 #define PAGE_UP_DN              126
 #define BACKSPACE               127
 
+///////////////////////////////////////////////////////////////////////////////
+
 typedef enum
 {
   CLR_DEFAULT  =  0    ,
@@ -124,5 +128,36 @@ typedef enum
   INPUT_DATE
 
 } InputBoxType;
+
+///////////////////////////////////////////////////////////////////////////////
+
+using Function = std::function<void(void*)>;
+
+typedef struct
+{
+  uint8_t id;
+  char accel_key;
+  std::string name;
+  uint8_t next_menu_id;
+  Function f;
+  void *instance;
+
+} MenuOption;
+
+typedef struct
+{
+  std::string prompt;
+  uint16_t max_length;
+  InputBoxType type;
+
+} MtInputBox;
+
+typedef struct
+{
+  uint64_t id;
+  std::string name;
+
+} MtPair;
+
 
 #endif

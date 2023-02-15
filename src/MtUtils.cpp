@@ -1,4 +1,4 @@
-/*
+/**
  * File:   OcUtils.cpp
  * Author: Michel Alwan
  *
@@ -6,6 +6,12 @@
  */
 
 #include "MtUtils.h"
+
+void CleanString(std::string &input)
+{
+  input.erase(0, input.find_first_not_of(' '));
+  input.erase(input.find_last_not_of(' ') + 1);
+}
 
 uint64_t Now()
 {

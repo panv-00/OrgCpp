@@ -1,4 +1,4 @@
-/*
+/**
  * File:   MtMenu.cpp
  * Author: Michel Alwan
  *
