@@ -4,21 +4,18 @@ CFLAGS=-Wall -O3 -g
 LIBS=
 VPATH=../src
 
-OBJECTS=       \
-	MtWindow.o   \
-	MtMenu.o     \
-	MtUtils.o    \
-	OcFile.o     \
-	OcTicket.o   \
-	OcGroup.o   \
+OBJECTS=   \
+	DBase.o  \
+	UI.o     \
+	Parser.o \
+	Utils.o  \
 
-DEPLIST=       \
-	MtInclude.h  \
+DEPLIST= \
 
 default: $(OBJECTS)
 	$(CPP) -o ../orgcpp ../src/OrgCpp.cpp \
 		$(OBJECTS) \
-		$(CFLAGS)  \
+		$(CFLAGS) \
 		$(LIBS)
 
 %.o: %.cpp %.h $(DEPLIST)
