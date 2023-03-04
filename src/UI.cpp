@@ -75,7 +75,7 @@ UI::UI() :
 {
   app_status = APP_OK;
   exit_message = "Application ended in (one) peace.";
-  status_line = "Ready..";
+  status_line = "quit | main | lsg | addg | swg";
 
   db = new DBase(".orgcpp");
   if (db->Status() == DB_ERR)
@@ -175,7 +175,6 @@ void UI::Run()
         if (parser.Cmd() == CMD_MAIN)
         {
           sc_page = 0;
-          status_line = "Ready..";
           screen_status = SCR_MAIN;
         }
   
@@ -183,19 +182,16 @@ void UI::Run()
         if (parser.Cmd() == CMD_LSG)
         {
           sc_page = 0;
-          status_line = "Listing Groups";
           screen_status = SCR_LSG;
         }
   
         // ADD GROUP ///////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_ADDG)
         {
-          status_line = std::string("Adding Group ") + parser.Param(0);
           db->AddGroup(parser.Param(0));
   
           if (db->Status() != DB_ERR)
           {
-            status_line += ": Success!";
             db->SaveData();
             screen_status = SCR_LSG;
           }
@@ -203,16 +199,13 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Adding Group " + parser.Param(0) + ": DB Error / Failed!";
           }
         }
 
         // SWITCH TO GROUP /////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_SWG)
         {
-          status_line = std::string("Switching to Group [index = ") +
-                                    parser.Param(0) + "]";
-  
           try
           {
             size_t num = std::stoul(parser.Param(0));
@@ -227,14 +220,16 @@ void UI::Run()
             else
             {
               app_status = APP_ER;
-              status_line += ": DB Error / Failed!";
+              status_line = "Switching to Group [index = " + parser.Param(0) +
+                            "] : DB Error / Failed!";
             }
           }
   
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Switching to Group [index = " + parser.Param(0) +
+                          "] : Error / Invalid index!";
           }
         }
  
@@ -245,18 +240,15 @@ void UI::Run()
           {
             status_line = "You must be in a group to do that!";
             app_status = APP_ER;
+            _RefreshScreen();
             break;
           }
 
-          status_line = std::string("Modifying Group [index = ") +
-                                     Uint64_TToString(cur_group.id) + "] -> "   +
-                                     parser.Param(0);
-  
+ 
           db->EditGroup(cur_group.id, parser.Param(0));
  
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_group = db->GetGroup(cur_group.id);
           }
@@ -264,7 +256,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = std::string("Modifying Group [index = ") +
+                                     Uint64_TToString(cur_group.id) + "] -> " +
+                                     parser.Param(0) + ": DB Error / Failed!";
           }
         }
   
@@ -275,17 +269,14 @@ void UI::Run()
           {
             status_line = "You need to be in a group to do that!";
             app_status = APP_ER;
+            _RefreshScreen();
             break;
           }
-
-          status_line = std::string("Deleting Group [index = ") +
-                                    Uint64_TToString(cur_group.id) + "]";
-  
+ 
           db->DeleteGroup(cur_group.id);
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_group.id = 0;
             cur_group.name = "";
@@ -295,7 +286,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Deleting Group [index = " +
+                          Uint64_TToString(cur_group.id) +
+                          "] : DB Error / Failed!";
           }
         }
 
@@ -306,10 +299,10 @@ void UI::Run()
           {
             status_line = "You need to be in a group to do that!";
             app_status = APP_ER;
+            _RefreshScreen();
             break;
           }
   
-          status_line = "Ready..";
           sc_page = 0;
           screen_status = SCR_LST;
         }
@@ -317,7 +310,6 @@ void UI::Run()
         // EXIT GROUP //////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_EXG)
         {
-          status_line = "Ready..";
           sc_page = 0;
           cur_group.id = 0;
           cur_group.name = "";
@@ -341,15 +333,14 @@ void UI::Run()
           {
             app_status = APP_ER;
             status_line = "You need to be in a group to do that!";
+            _RefreshScreen();
             break;
           }
   
-          status_line = std::string("Adding Ticket ") + parser.Param(0);
           db->AddTicket(cur_group.id, parser.Param(0), parser.Param(1));
 
           if (db->Status() != DB_ERR)
           {
-            status_line += ": Success!";
             db->SaveData();
             sc_page = 0;
             screen_status = SCR_LST;
@@ -358,16 +349,14 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Adding Ticket " + parser.Param(0) +
+                          ": DB Error / Failed!";
           }
         }
 
         // OPEN TICKET /////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_OPT)
         {
-          status_line = std::string("Opening Ticket [index = ") +
-                                     parser.Param(0) + "] ";
-  
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -376,7 +365,6 @@ void UI::Run()
 
             if (db->Status() == DB_OK && cur_ticket.id > 0)
             {
-              status_line += ": Success!";
               cur_group = db->GetGroup(cur_ticket.group_id);
               screen_status = SCR_TKV;
             }
@@ -384,14 +372,16 @@ void UI::Run()
             else
             {
               app_status = APP_ER;
-              status_line += ": DB Error / Failed!";
+              status_line = "Opening Ticket [index = " + parser.Param(0) +
+                            "] : DB Error / Failed!";
             }
           }
   
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Opening Ticket [index = " + parser.Param(0) +
+                          "] : Error / Invalid index!";
           }
         }
 
@@ -405,16 +395,11 @@ void UI::Run()
             _RefreshScreen();
             break;
           }
-
-          status_line = std::string("Modifying Ticket Name [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] -> "   +
-                                     parser.Param(0);
-  
+ 
           db->EditTicket(cur_ticket.id, parser.Param(0), cur_ticket.desc);
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -422,7 +407,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Modifying Ticket Name [index = " +
+                          Uint64_TToString(cur_ticket.id) + "] -> " +
+                          parser.Param(0) + ": DB Error / Failed!";
           }
         }
 
@@ -437,15 +424,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Changing Ticket Description [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] -> "   +
-                                     parser.Param(0);
-  
           db->EditTicket(cur_ticket.id, cur_ticket.name, parser.Param(0));
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -453,9 +435,10 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Changing Ticket Description [index = " +
+                          Uint64_TToString(cur_ticket.id) + "] -> " +
+                          parser.Param(0) + ": DB Error / Failed!";
           }
-  
         }
 
        // DELETE TICKET ///////////////////////////////////////////////////////
@@ -469,14 +452,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Deleting Ticket [index = ") +
-                                    Uint64_TToString(cur_ticket.id) + "]";
-  
           db->DeleteTicket(cur_ticket.id);
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_ticket.id = 0;
             cur_ticket.group_id = 0;
@@ -495,7 +474,8 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Deleting Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) + "] : DB Error / Failed!";
           }
         }
 
@@ -510,11 +490,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Moving Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] -> " +
-                                    " To Group [index = " +
-                                     parser.Param(0) + "] ";
-  
           try
           {
             size_t gnum = std::stoul(parser.Param(0));
@@ -527,7 +502,6 @@ void UI::Run()
 
               if (db->Status() == DB_OK)
               {
-                status_line += ": Success!";
                 db->SaveData();
                 cur_group = db->GetGroup(gnum);
                 cur_ticket = db->GetTicket(cur_ticket.id);
@@ -536,21 +510,31 @@ void UI::Run()
               else
               {
                 app_status = APP_ER;
-                status_line += ": DB Error / Failed!";
+                status_line = "Moving Ticket [index = " +
+                              Uint64_TToString(cur_ticket.id) +
+                              "] -> To Group [index = " + parser.Param(0) +
+                              "] : DB Error / Failed!";
               }
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += ": DB Error / No group found at index " + SizeTToString(gnum);
+              status_line = "Moving Ticket [index = " +
+                            Uint64_TToString(cur_ticket.id) +
+                            "] -> To Group [index = " + parser.Param(0) +
+                            "] : DB Error / No group found at index " +
+                            SizeTToString(gnum);
             }
           }
   
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Moving Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) +
+                          "] -> To Group [index = " + parser.Param(0) +
+                          "] : Error / Invalid index!";
           }
         }
 
@@ -565,14 +549,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Marking Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] as ONGOING";
-  
           db->ChangeTicketState(cur_ticket.id, TKT_ONG);
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -580,7 +560,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Marking Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) +
+                          "] as ONGOING: DB Error / Failed!";
           }
         }
 
@@ -595,14 +577,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Marking Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] as DONE";
-  
           db->ChangeTicketState(cur_ticket.id, TKT_DON);
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -610,7 +588,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Marking Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) +
+                          "] as DONE: DB Error / Failed!";
           }
         }
 
@@ -625,14 +605,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Marking Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] as HIDDEN";
-  
           db->ChangeTicketState(cur_ticket.id, TKT_HID);
 
           if (db->Status() == DB_OK)
           {
-            status_line += ": Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -640,7 +616,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += ": DB Error / Failed!";
+            status_line = "Marking Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) +
+                          "] as HIDDEN: DB Error / Failed!";
           }
         }
  
@@ -655,15 +633,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Adding Attachment to Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] >> " +
-                                     parser.Param(0);
-
           db->AddTicketAttachment(cur_ticket.id, parser.Param(0));
 
           if (db->Status() == DB_OK)
           {
-            status_line += " : Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -671,7 +644,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += " : Failed!";
+            status_line = "Adding Attachment to Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) + "] >> " +
+                          parser.Param(0) + " : Failed!";
           }
         }
 
@@ -686,30 +661,25 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Opening Attachment [index = ") +
-                                     parser.Param(0) + "] ";
           try
           {
             size_t anum = std::stoul(parser.Param(0));
  
             db->OpenTicketAttachment(cur_ticket.id, anum);
 
-            if (db->Status() == DB_OK)
-            {
-              status_line += " : Success!";
-            }
-
-            else
+            if (db->Status() != DB_OK)
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Opening Attachment [index = " + parser.Param(0) +
+                            "] : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Opening Attachment [index = " + parser.Param(0) +
+                          "] : Error / Invalid index!";
           }
         }
 
@@ -724,15 +694,10 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("New Text Attachment to Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] >> " +
-                                     parser.Param(0);
-
           db->NewTextTicketAttachment(cur_ticket.id, parser.Param(0));
 
           if (db->Status() == DB_OK)
           {
-            status_line += " : Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -740,7 +705,9 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += " : Failed!";
+            status_line = "New Text Attachment to Ticket [index = " +
+                          Uint64_TToString(cur_ticket.id) + "] >> " +
+                          parser.Param(0) + " : Failed!";
           }
         }
 
@@ -755,8 +722,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Deleting Attachment [index = ") +
-                                     parser.Param(0) + "] ";
           try
           {
             size_t anum = std::stoul(parser.Param(0));
@@ -765,21 +730,22 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Deleting Attachment [index = " +
+                            parser.Param(0) + "] : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Deleting Attachment [index = " +
+                          parser.Param(0) + "] : Error / Invalid index!";
           }
         }
 
@@ -794,19 +760,17 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Adding Task to Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "] >> " +
-                                     parser.Param(0) + ", " +
-                                     parser.Param(1) + ", " +
-                                     parser.Param(2);
-
           std::string eta_str = parser.Param(0);
           uint64_t eta = StringdateToTimestamp(eta_str);
 
           if (eta == (uint64_t)-1)
           {
               app_status = APP_ER;
-              status_line += " : wrong date!";
+              status_line = std::string("Adding Task to Ticket [index = ") +
+                                     Uint64_TToString(cur_ticket.id) + "] >> " +
+                                     parser.Param(0) + ", " +
+                                     parser.Param(1) + ", " +
+                                     parser.Param(2) + " : wrong date!";
               _RefreshScreen();
               break;
           }
@@ -821,7 +785,6 @@ void UI::Run()
   
           if (db->Status() == DB_OK)
           {
-            status_line += " : Success!";
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
@@ -829,7 +792,11 @@ void UI::Run()
           else
           {
             app_status = APP_ER;
-            status_line += " : Failed!";
+            status_line = std::string("Adding Task to Ticket [index = ") +
+                                     Uint64_TToString(cur_ticket.id) + "] >> " +
+                                     parser.Param(0) + ", " +
+                                     parser.Param(1) + ", " +
+                                     parser.Param(2) + " : Failed!";
           }
         }
 
@@ -844,9 +811,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Incr. Task Progress [index = ") +
-                                     parser.Param(0) + "]";
-
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -855,21 +819,22 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Incr. Task Progress [index = " +
+                            parser.Param(0) + "] : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Incr. Task Progress [index = " +
+                          parser.Param(0) + "] : Error / Invalid index!";
           }
         }
 
@@ -884,9 +849,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Decr. Task Progress [index = ") +
-                                     parser.Param(0) + "]";
-
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -895,21 +857,22 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Decr. Task Progress [index = " +
+                            parser.Param(0) + "] : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Decr. Task Progress [index = " +
+                          parser.Param(0) + "] : Error / Invalid index!";
           }
         }
 
@@ -924,10 +887,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Changing Task ETA [index = ") +
-                                     parser.Param(0) + "] -> " +
-                                     parser.Param(1);
-
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -938,7 +897,9 @@ void UI::Run()
             if (eta == (uint64_t)-1)
             {
               app_status = APP_ER;
-              status_line += " : wrong date!";
+              status_line = "Changing Task ETA [index = " +
+                            parser.Param(0) + "] -> " +
+                            parser.Param(1) + " : wrong date!";
               _RefreshScreen();
               break;
             }
@@ -947,21 +908,24 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Changing Task ETA [index = " +
+                            parser.Param(0) + "] -> " +
+                            parser.Param(1) + " : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Changing Task ETA [index = " +
+                          parser.Param(0) + "] -> " +
+                          parser.Param(1) + ": Error / Invalid index!";
           }
         }
 
@@ -976,10 +940,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Changing Task ETA [index = ") +
-                                     parser.Param(0) + "] -> " +
-                                     parser.Param(1);
-
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -988,21 +948,24 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Changing Task ETA [index = " +
+                            parser.Param(0) + "] -> " +
+                            parser.Param(1) + " : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Changing Task ETA [index = " +
+                          parser.Param(0) + "] -> " +
+                          parser.Param(1) + ": Error / Invalid index!";
           }
         }
 
@@ -1017,10 +980,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Changing Task ETA [index = ") +
-                                     parser.Param(0) + "] -> " +
-                                     parser.Param(1);
-
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -1029,21 +988,24 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Changing Task ETA [index = " +
+                            parser.Param(0) + "] -> " +
+                            parser.Param(1) + " : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Changing Task ETA [index = " +
+                          parser.Param(0) + "] -> " +
+                          parser.Param(1) + ": Error / Invalid index!";
           }
         }
 
@@ -1058,9 +1020,6 @@ void UI::Run()
             break;
           }
 
-          status_line = std::string("Deleting Task [index = ") +
-                                     parser.Param(0) + "]";
-
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
@@ -1069,21 +1028,22 @@ void UI::Run()
 
             if (db->Status() == DB_OK)
             {
-              status_line += " : Success!";
               cur_ticket = db->GetTicket(cur_ticket.id);
             }
 
             else
             {
               app_status = APP_ER;
-              status_line += " : Failed!";
+              status_line = "Deleting Task [index = " +
+                            parser.Param(0) + "] : Failed!";
             }
           }
 
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
-            status_line += std::string(": Error / Invalid index!");
+            status_line = "Deleting Task [index = " +
+                          parser.Param(0) + "] : Error / Invalid index!";
           }
         }
 
@@ -1097,9 +1057,6 @@ void UI::Run()
             _RefreshScreen();
             break;
           }
-
-          status_line = std::string("Closing Ticket [index = ") +
-                                     Uint64_TToString(cur_ticket.id) + "]";
 
           cur_ticket.id = 0;
           cur_ticket.group_id = 0;
@@ -1181,8 +1138,8 @@ void UI::_SetupWelcomePage()
   screen_title = std::string(APPNAME) + " v." + APPVERSION;
   screen_header.clear();
   screen_content.clear();
-  _AddHeaderContent("");
 
+  _AddHeaderContent("");
   _AddHeaderContent("  .g8\"\"8q.                           .g8\"\"\"bgd");
   _AddHeaderContent(".dP'    `YM.                       .dP'     `M");
   _AddHeaderContent("dM'      `MM `7Mb,od8 .P\"Ybmmm     dM'       ``7MMpdMAo.`7MMpdMAo.");
@@ -1193,10 +1150,7 @@ void UI::_SetupWelcomePage()
   _AddHeaderContent("                    6'     dP                   MM        MM");
   _AddHeaderContent("                    Ybmmmd'                   .JMML.    .JMML.");
 
-  _AddHeaderContent("");
   _AddHeaderContent("┌─────────────┬───────────────────┬─────────────────────────────────┐");
-  _AddHeaderContent("│ Command     │ Parameters        │ Description                     │");
-  _AddHeaderContent("├─────────────┼───────────────────┼─────────────────────────────────┤");
   _AddContent      ("│ quit        │                   │ quit the app                    │");
   _AddContent      ("│ main        │                   │ go to main screen               │");
   _AddContent      ("│ lsg         │                   │ list groups                     │");
@@ -1227,7 +1181,6 @@ void UI::_SetupWelcomePage()
   _AddContent      ("│ cttd        │ id new_desc       │ Change Ticket Task Description  │");
   _AddContent      ("│ dtt         │ id                │ Delete Ticket Task [id]         │");
   _AddContent      ("│ clt         │                   │ close ticket                    │");
-  _AddContent      ("│             │                   │                                 │");
   _AddContent      ("└─────────────┴───────────────────┴─────────────────────────────────┘");
 }
 
@@ -1370,11 +1323,21 @@ void UI::_RefreshScreen()
     {
       _SetupWelcomePage();
 
+      if (app_status == APP_OK)
+      {
+        status_line = "quit | main | lsg | addg | swg";
+      }
+
     } break;
 
     case SCR_LSG:
     {
       _ListGroups();
+
+      if (app_status == APP_OK)
+      {
+        status_line = "quit | main | lsg | addg | swg";
+      }
 
     } break;
 
@@ -1382,11 +1345,21 @@ void UI::_RefreshScreen()
     {
       _ListTickets();
 
+      if (app_status == APP_OK)
+      {
+        status_line = "reng | delg | lst | addt | opt | exg";
+      }
+
     } break;
 
     case SCR_TKV:
     {
       _SetupTicketView();
+
+      if (app_status == APP_OK)
+      {
+        status_line = "rent | ctd | delt | movt | mtd | mto | mth | ata | ota | nta | dta | att | ittp | dttp | ctte | cttr | cttd | dtt | clt";
+      }
 
     } break;
   }
