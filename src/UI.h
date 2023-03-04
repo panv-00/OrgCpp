@@ -24,6 +24,8 @@
 #define APPNAME "OrgCpp"
 #define APPVERSION "0.0.1"
 
+#define LARGEBUF 512
+
 #define ICO_ARR_ (wchar_t) L'\u21c9' // Arrow Select
 
 #define TAB          9
@@ -40,26 +42,69 @@
 
 typedef enum
 {
-  CLR_DEFAULT  =  0    ,
-  CLR_BLACK_FG = 30    ,
-  CLR_RED_FG           ,
-  CLR_GREEN_FG         ,
-  CLR_YELLOW_FG        ,
-  CLR_BLUE_FG          ,
-  CLR_MAGENTA_FG       ,
-  CLR_CYAN_FG          ,
-  CLR_WHITE_FG         ,
+  CLR_DEFAULT     =   0 ,
+  CLR_BOLD        =   1 ,
+  CLR_UNDERLINE   =   4 ,
+  CLR_BLACK_FG    =  30 ,
+  CLR_RED_FG            ,
+  CLR_GREEN_FG          ,
+  CLR_YELLOW_FG         ,
+  CLR_BLUE_FG           ,
+  CLR_MAGENTA_FG        ,
+  CLR_CYAN_FG           ,
+  CLR_WHITE_FG          ,
 
-  CLR_BLACK_BG = 40    ,
-  CLR_RED_BG           ,
-  CLR_GREEN_BG         ,
-  CLR_YELLOW_BG        ,
-  CLR_BLUE_BG          ,
-  CLR_MAGENTA_BG       ,
-  CLR_CYAN_BG          ,
-  CLR_WHITE_BG
+  CLR_BLACK_BG    =  40 ,
+  CLR_RED_BG            ,
+  CLR_GREEN_BG          ,
+  CLR_YELLOW_BG         ,
+  CLR_BLUE_BG           ,
+  CLR_MAGENTA_BG        ,
+  CLR_CYAN_BG           ,
+  CLR_WHITE_BG          ,
+
+  CLR_BR_BLACK_FG =  90 ,
+  CLR_BR_RED_FG         ,
+  CLR_BR_GREEN_FG       ,
+  CLR_BR_YELLOW_FG      ,
+  CLR_BR_BLUE_FG        ,
+  CLR_BR_MAGENTA_FG     ,
+  CLR_BR_CYAN_FG        ,
+  CLR_BR_WHITE_FG       ,
+
+  CLR_BR_BLACK_BG = 100 ,
+  CLR_BR_RED_BG         ,
+  CLR_BR_GREEN_BG       ,
+  CLR_BR_YELLOW_BG      ,
+  CLR_BR_BLUE_BG        ,
+  CLR_BR_MAGENTA_BG     ,
+  CLR_BR_CYAN_BG        ,
+  CLR_BR_WHITE_BG
+
 
 } ColorCode;
+
+typedef enum
+{
+  APP_ER, // Application Error
+  APP_WR, // Application Warning
+  APP_WT, // Application Waiting
+  APP_OK  // Application OK
+
+} AppStatus;
+
+std::vector<std::string> wrap_string(const std::string &str, uint16_t width);
+void HandleResize(int sig);
+
+typedef enum
+{
+  SCR_QUIT,
+  SCR_MAIN,
+  SCR_LSG,
+  SCR_LST,
+  SCR_TKV
+
+} ScreenStatus;
 
 class UI
 {
@@ -72,7 +117,8 @@ public:
 private:
   void _SetupWelcomePage();
   void _ListGroups();
-  void _ListTickets(uint64_t group_id);
+  void _ListTickets();
+  void _SetupTicketView();
   void _AddHeaderContent(std::string content);
   void _AddContent(std::string content);
   void _RefreshScreen();
@@ -86,7 +132,8 @@ private:
   void _MoveRight(uint16_t count);
   void _SetColor(ColorCode cc);
 
-  bool exit_app;
+  ScreenStatus screen_status;
+  AppStatus app_status;
 
   std::string exit_message;
   std::string status_line;
@@ -110,6 +157,7 @@ private:
   uint16_t start_at;
 
   Group cur_group;
+  Ticket cur_ticket;
 
   DBase *db;
 };

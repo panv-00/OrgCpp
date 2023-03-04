@@ -33,6 +33,18 @@ std::string TimestampToString(uint64_t ts)
   return std::string(buffer);
 }
 
+std::string TimestampToStringNoTime(uint64_t ts)
+{
+  struct tm *timeinfo;
+  char buffer[11];
+  time_t tts = (time_t) ts;
+
+  timeinfo = localtime(&tts);
+  strftime(buffer, sizeof(buffer), "%Y/%m/%d", timeinfo);
+
+  return std::string(buffer);
+}
+
 std::string SizeTToString(size_t value)
 {
   char buffer[32];
@@ -105,4 +117,25 @@ bool Compare(const std::string &str1, const std::string &str2)
   );
 
   return str1_lower == str2_lower;
+}
+
+uint64_t StringdateToTimestamp(std::string &sd)
+{
+  // Expect a string of the format YYYYMMDD
+  if (sd.length() != 8)
+  {
+    return -1;
+  }
+
+  struct tm tm = {};
+  time_t timestamp;
+
+  if (strptime(sd.c_str(), "%Y%m%d", &tm) == NULL)
+  {
+    return -1;
+  }
+
+  timestamp = mktime(&tm);
+
+  return (uint64_t) timestamp;
 }

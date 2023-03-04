@@ -27,11 +27,13 @@ typedef enum
 {
   TKT_ONG, // Ongoing
   TKT_DON, // Done
-  TKT_DEL  // Deleted
+  TKT_HID  // Hidden
 
 } TicketState;
 
 const char *TicketStateToStr(TicketState state);
+std::string get_file_extension(const std::string &path);
+std::string get_file_name(const std::string &path);
 
 typedef struct
 {
@@ -44,6 +46,7 @@ typedef struct
 {
   size_t id;
   std::string name;
+  std::string path;
 
 } Attachment;
 
@@ -52,7 +55,7 @@ typedef struct
   size_t id;
   uint8_t progress;
   std::string desc;
-  std::string action_by;
+  std::string resource;
   uint64_t eta;
 
 } TicketTask;
@@ -101,33 +104,46 @@ public:
   );
   void DeleteTicket(size_t id);
   Ticket GetTicket(size_t id);
-  void MoveTicketToGroup(size_t id, uint64_t new_group_id);
+  void MoveTicketToGroup(size_t id, size_t new_group_id);
   void ChangeTicketState(size_t id, TicketState new_state);
-  void AddTicketAttachment(size_t id, std::string attachment_name);
+  void AddTicketAttachment(size_t id, std::string orig_path);
+  void OpenTicketAttachment(size_t id, size_t attachment_id);
+  void NewTextTicketAttachment(size_t id, std::string filename);
   void EditTicketAttachment
   (
     size_t id,
     size_t attachment_id,
-    std::string new_attachment_name
+    std::string new_attachment_path
   );
   void DeleteTicketAttachment(size_t id, size_t attachment_id);
   Attachment GetTicketAttachment(size_t id, size_t attachment_id);
   void AddTicketTask
   (
     size_t id,
-    std::string desc,
-    std::string action_by,
-    uint64_t eta
+    uint64_t eta,
+    std::string resource,
+    std::string desc
   );
-  void EditTicketTask
+  void EditTicketTaskETA
   (
     size_t id,
     size_t task_id,
-    std::string new_desc,
-    std::string new_action_by,
     uint64_t new_eta
   );
-  void SetTicketTaskProgress(size_t id, size_t task_id, uint8_t progress);
+  void EditTicketTaskResource
+  (
+    size_t id,
+    size_t task_id,
+    std::string new_resource
+  );
+  void EditTicketTaskDesc
+  (
+    size_t id,
+    size_t task_id,
+    std::string new_desc
+  );
+  void IncTicketTaskProgress(size_t id, size_t task_id);
+  void DecTicketTaskProgress(size_t id, size_t task_id);
   void DeleteTicketTask(size_t id, size_t task_id);
   TicketTask GetTicketTask(size_t id, size_t task_id);
 
@@ -149,6 +165,7 @@ private:
 
   DBStatusCode status_code;
   std::string db_path;
+  std::string dv_path;
   std::string db_name;
 
   std::vector<Group> groups;

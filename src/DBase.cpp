@@ -13,10 +13,34 @@ const char *TicketStateToStr(TicketState state)
   {
     case TKT_ONG: return "Ongoing";
     case TKT_DON: return "Done";
-    case TKT_DEL: return "Deleted";
+    case TKT_HID: return "Hidden";
   }
 
   return "Undefined";
+}
+
+std::string get_file_extension(const std::string &path)
+{
+  std::size_t dot_pos = path.find_last_of(".");
+
+  if (dot_pos == std::string::npos)
+  {
+    return "";
+  }
+
+  return path.substr(dot_pos);
+}
+
+std::string get_file_name(const std::string &path)
+{
+  std::size_t slash_pos = path.find_last_of("/");
+
+  if (slash_pos == std::string::npos)
+  {
+    return path;
+  }
+
+  return path.substr(slash_pos + 1);
 }
 
 DBase::DBase(const std::string &db_name) : db_name{db_name}
@@ -26,7 +50,7 @@ DBase::DBase(const std::string &db_name) : db_name{db_name}
 
 DBase::~DBase()
 {
-
+  SaveData();
 }
 
 DBStatusCode DBase::Status()
@@ -229,7 +253,7 @@ Ticket DBase::GetTicket(size_t id)
   status_code = DB_ERR;
   std::vector<Attachment> empty_attachment;
   std::vector<TicketTask> empty_task;
-  return Ticket {0, 0, TKT_DEL, 0, "", "", empty_attachment, empty_task };
+  return Ticket {0, 0, TKT_HID, 0, "", "", empty_attachment, empty_task };
 }
 
 void DBase::MoveTicketToGroup(size_t id, size_t new_group_id)
@@ -262,17 +286,75 @@ void DBase::ChangeTicketState(size_t id, TicketState new_state)
   status_code = DB_ERR;
 }
 
-void DBase::AddTicketAttachment(size_t id, std::string attachment_name)
+void DBase::AddTicketAttachment(size_t id, std::string orig_path)
 {
   for (auto it = tickets.begin(); it != tickets.end(); ++it)
   {
     if (it->id == id)
     {
-      status_code = DB_OK;
       size_t new_id = _GetTicketsAttachmentsLastId(id);
-      Attachment new_att = { new_id + 1, attachment_name };
-      it->attachments.push_back(new_att);
-      return;
+
+      char buf[1024];
+      std::string file_extension = get_file_extension(orig_path);
+
+      sprintf(buf, "%06ld%06ld%s", id, new_id + 1, file_extension.c_str());
+      std::string attachment_path = buf;
+
+      std::string command = "cp \"" + orig_path + "\" " + dv_path + "/" + attachment_path;
+
+      int result = system(command.c_str());
+
+      if (result == 0)
+      {
+        status_code = DB_OK;
+        Attachment new_att = { new_id + 1, get_file_name(orig_path), attachment_path };
+        it->attachments.push_back(new_att);
+        return;
+      }
+    }
+  }
+
+  status_code = DB_ERR;
+}
+
+void DBase::OpenTicketAttachment(size_t id, size_t attachment_id)
+{
+  std::string ta = GetTicketAttachment(id, attachment_id).path;
+  
+  if (status_code == DB_ERR)
+  {
+    return;
+  }
+
+  std::string command = "xdg-open " + dv_path + "/" + ta;
+  int result = system(command.c_str());
+
+  if (result == 0)
+  {
+    status_code = DB_OK;
+    return;
+  }
+
+  status_code = DB_ERR;
+}
+
+void DBase::NewTextTicketAttachment(size_t id, std::string filename)
+{
+  for (auto it = tickets.begin(); it != tickets.end(); ++it)
+  {
+    if (it->id == id)
+    {
+      std::string command = "echo \"% " + filename + "\n\" > \"" + db_path + "/" + filename + ".md\"";
+      int result = system(command.c_str());
+
+      if (result == 0)
+      {
+        AddTicketAttachment(id, db_path + "/" + filename + ".md");
+        command = "rm \"" + db_path + "/" + filename + ".md\"";
+        system(command.c_str());
+
+        return;
+      }
     }
   }
 
@@ -283,7 +365,7 @@ void DBase::EditTicketAttachment
 (
   size_t id,
   size_t attachment_id,
-  std::string new_attachment_name
+  std::string new_attachment_path
 )
 {
   for (auto it = tickets.begin(); it != tickets.end(); ++it)
@@ -295,7 +377,7 @@ void DBase::EditTicketAttachment
         if (att_it->id == attachment_id)
         {
           status_code = DB_OK;
-          att_it->name = new_attachment_name;
+          att_it->name = new_attachment_path;
           return;
         }
       }
@@ -315,9 +397,16 @@ void DBase::DeleteTicketAttachment(size_t id, size_t attachment_id)
       {
         if (att_it->id == attachment_id)
         {
-          status_code = DB_OK;
-          it->attachments.erase(att_it);
-          return;
+          std::string command = "rm " + dv_path + "/" + att_it->path;
+          int result = system(command.c_str());
+
+          if (result == 0)
+          {
+            status_code = DB_OK;
+            it->attachments.erase(att_it);
+
+            return;
+          }
         }
       }
     }
@@ -350,9 +439,9 @@ Attachment DBase::GetTicketAttachment(size_t id, size_t attachment_id)
 void DBase::AddTicketTask
 (
   size_t id,
-  std::string desc,
-  std::string action_by,
-  uint64_t eta
+  uint64_t eta,
+  std::string resource,
+  std::string desc
 )
 {
   for (auto it = tickets.begin(); it != tickets.end(); ++it)
@@ -361,7 +450,7 @@ void DBase::AddTicketTask
     {
       status_code = DB_OK;
       size_t new_id = _GetTicketsTasksLastId(id);
-      TicketTask new_task = { new_id + 1, 0, desc, action_by, eta };
+      TicketTask new_task = { new_id + 1, 0, desc, resource, eta };
       it->tasks.push_back(new_task);
       return;
     }
@@ -370,12 +459,10 @@ void DBase::AddTicketTask
   status_code = DB_ERR;
 }
 
-void DBase::EditTicketTask
+void DBase::EditTicketTaskETA
 (
   size_t id,
   size_t task_id,
-  std::string new_desc,
-  std::string new_action_by,
   uint64_t new_eta
 )
 {
@@ -388,8 +475,6 @@ void DBase::EditTicketTask
         if (tsk_it->id == task_id)
         {
           status_code = DB_OK;
-          tsk_it->desc = new_desc;
-          tsk_it->action_by = new_action_by;
           tsk_it->eta = new_eta;
           return;
         }
@@ -400,7 +485,12 @@ void DBase::EditTicketTask
   status_code = DB_ERR;
 }
 
-void DBase::SetTicketTaskProgress(size_t id, size_t task_id, uint8_t progress)
+void DBase::EditTicketTaskResource
+(
+  size_t id,
+  size_t task_id,
+  std::string new_resource
+)
 {
   for (auto it = tickets.begin(); it != tickets.end(); ++it)
   {
@@ -411,7 +501,85 @@ void DBase::SetTicketTaskProgress(size_t id, size_t task_id, uint8_t progress)
         if (tsk_it->id == task_id)
         {
           status_code = DB_OK;
-          tsk_it->progress = progress;
+          tsk_it->resource = new_resource;
+          return;
+        }
+      }
+    }
+  }
+
+  status_code = DB_ERR;
+}
+
+void DBase::EditTicketTaskDesc
+(
+  size_t id,
+  size_t task_id,
+  std::string new_desc
+)
+{
+  for (auto it = tickets.begin(); it != tickets.end(); ++it)
+  {
+    if (it->id == id)
+    {
+      for (auto tsk_it = it->tasks.begin(); tsk_it != it->tasks.end(); ++tsk_it)
+      {
+        if (tsk_it->id == task_id)
+        {
+          status_code = DB_OK;
+          tsk_it->desc = new_desc;
+          return;
+        }
+      }
+    }
+  }
+
+  status_code = DB_ERR;
+}
+
+void DBase::IncTicketTaskProgress(size_t id, size_t task_id)
+{
+  for (auto it = tickets.begin(); it != tickets.end(); ++it)
+  {
+    if (it->id == id)
+    {
+      for (auto tsk_it = it->tasks.begin(); tsk_it != it->tasks.end(); ++tsk_it)
+      {
+        if (tsk_it->id == task_id)
+        {
+          status_code = DB_OK;
+
+          if (tsk_it->progress < 100)
+          {
+            tsk_it->progress += 10;
+          }
+
+          return;
+        }
+      }
+    }
+  }
+
+  status_code = DB_ERR;
+}
+
+void DBase::DecTicketTaskProgress(size_t id, size_t task_id)
+{
+  for (auto it = tickets.begin(); it != tickets.end(); ++it)
+  {
+    if (it->id == id)
+    {
+      for (auto tsk_it = it->tasks.begin(); tsk_it != it->tasks.end(); ++tsk_it)
+      {
+        if (tsk_it->id == task_id)
+        {
+          status_code = DB_OK;
+
+          if (tsk_it->progress > 0)
+          {
+            tsk_it->progress -= 10;
+          }
+
           return;
         }
       }
@@ -497,6 +665,7 @@ void DBase::_InitDB()
   }
 
   db_path = std::string(home) + "/" + db_name;
+  dv_path = std::string(home) + "/" + db_name + "/drive";
 
   struct stat info;
 
@@ -514,7 +683,21 @@ void DBase::_InitDB()
     status_code = DB_ERR;
     return;
   }
-  
+
+  if (stat(dv_path.c_str(), &info) != 0)
+  {
+    if (mkdir(dv_path.c_str(), 0700) != 0)
+    {
+      status_code = DB_ERR;
+      return;
+    }
+  }
+
+  else if (!S_ISDIR(info.st_mode))
+  {
+    status_code = DB_ERR;
+    return;
+  } 
   status_code = DB_OK;
 }
 
@@ -649,10 +832,13 @@ void DBase::_LoadTickets()
         Attachment attachment;
         size_t attachment_id;
         std::string attachment_name;
+        std::string attachment_path;
         infile.read(reinterpret_cast<char*>(&attachment_id), sizeof(attachment_id));
         std::getline(infile, attachment_name, '\0');
+        std::getline(infile, attachment_path, '\0');
         attachment.id = attachment_id;
         attachment.name = attachment_name;
+        attachment.path = attachment_path;
         attachments.emplace_back(attachment);
       }
     }
@@ -668,17 +854,17 @@ void DBase::_LoadTickets()
         size_t task_id;
         uint8_t task_progress;
         std::string task_desc;
-        std::string task_action_by;
+        std::string task_resource;
         uint64_t task_eta;
         infile.read(reinterpret_cast<char*>(&task_id), sizeof(task_id));
         infile.read(reinterpret_cast<char*>(&task_progress), sizeof(task_progress));
         std::getline(infile, task_desc, '\0');
-        std::getline(infile, task_action_by, '\0');
+        std::getline(infile, task_resource, '\0');
         infile.read(reinterpret_cast<char*>(&task_eta), sizeof(task_eta));
         task.id = task_id;
         task.progress = task_progress;
         task.desc = task_desc;
-        task.action_by = task_action_by;
+        task.resource = task_resource;
         task.eta = task_eta;
         tasks.emplace_back(task);
       }
@@ -733,6 +919,7 @@ void DBase::_SaveTickets()
     {
       outfile.write(reinterpret_cast<const char*>(&attachment.id), sizeof(attachment.id));
       outfile.write(attachment.name.c_str(), attachment.name.length() + 1);
+      outfile.write(attachment.path.c_str(), attachment.path.length() + 1);
     }
 
     size_t num_tasks = ticket.tasks.size();
@@ -742,7 +929,7 @@ void DBase::_SaveTickets()
       outfile.write(reinterpret_cast<const char*>(&task.id), sizeof(task.id));
       outfile.write(reinterpret_cast<const char*>(&task.progress), sizeof(task.progress));
       outfile.write(task.desc.c_str(), task.desc.length() + 1);
-      outfile.write(task.action_by.c_str(), task.action_by.length() + 1);
+      outfile.write(task.resource.c_str(), task.resource.length() + 1);
       outfile.write(reinterpret_cast<const char*>(&task.eta), sizeof(task.eta));
     }
   }
