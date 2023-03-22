@@ -25,6 +25,10 @@ typedef enum
 {
   CMD_QUIT,
   CMD_MAIN,
+  CMD_FDT,
+  CMD_FOT,
+  CMD_FHT,
+  CMD_FAT,
   CMD_LSG,
   CMD_ADDG,
   CMD_SWG,

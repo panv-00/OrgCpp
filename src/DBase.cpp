@@ -651,6 +651,64 @@ std::vector<Ticket> DBase::GetTickets(size_t group_id)
   return group_tickets;
 }
 
+std::vector<Ticket> DBase::GetDoneTickets()
+{
+  std::vector<Ticket> group_tickets;
+
+  for (auto ticket : tickets)
+  {
+    if (ticket.state == TKT_DON)
+    {
+      group_tickets.push_back(ticket);
+    }
+  }
+
+  return group_tickets;
+}
+
+std::vector<Ticket> DBase::GetOpenTickets()
+{
+  std::vector<Ticket> group_tickets;
+
+  for (auto ticket : tickets)
+  {
+    if (ticket.state == TKT_ONG)
+    {
+      group_tickets.push_back(ticket);
+    }
+  }
+
+  return group_tickets;
+}
+
+std::vector<Ticket> DBase::GetHiddenTickets()
+{
+  std::vector<Ticket> group_tickets;
+
+  for (auto ticket : tickets)
+  {
+    if (ticket.state == TKT_HID)
+    {
+      group_tickets.push_back(ticket);
+    }
+  }
+
+  return group_tickets;
+}
+
+std::vector<Ticket> DBase::GetAllTickets()
+{
+  std::vector<Ticket> group_tickets;
+
+  for (auto ticket : tickets)
+  {
+    group_tickets.push_back(ticket);
+  }
+
+  return group_tickets;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void DBase::_InitDB()

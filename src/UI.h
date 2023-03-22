@@ -100,6 +100,10 @@ typedef enum
 {
   SCR_QUIT,
   SCR_MAIN,
+  SCR_FDT,
+  SCR_FOT,
+  SCR_FHT,
+  SCR_FAT,
   SCR_LSG,
   SCR_LST,
   SCR_TKV
@@ -115,10 +119,16 @@ public:
   void Run();
 
 private:
+  void _ResetCurGroup();
+  void _ResetCurTicket();
   void _SetupWelcomePage();
   void _ListGroups();
   void _ListTickets();
   void _SetupTicketView();
+  void _ListDoneTickets();
+  void _ListOpenTickets();
+  void _ListHiddenTickets();
+  void _ListAllTickets();
   void _AddHeaderContent(std::string content);
   void _AddContent(std::string content);
   void _RefreshScreen();

@@ -75,7 +75,7 @@ UI::UI() :
 {
   app_status = APP_OK;
   exit_message = "Application ended in (one) peace.";
-  status_line = "quit | main | lsg | addg | swg";
+  status_line = "quit | main | fdt | fot | fht | fat | lsg | addg | swg";
 
   db = new DBase(".orgcpp");
   if (db->Status() == DB_ERR)
@@ -93,20 +93,6 @@ UI::UI() :
   }
 
   input_line = "";
-  cur_group.id = 0;
-  cur_group.name = "";
-
-  cur_ticket.id = 0;
-  cur_ticket.group_id = 0;
-  cur_ticket.state = TKT_HID;
-  cur_ticket.creation_date = 0;
-  cur_ticket.name = "";
-  cur_ticket.desc = "";
-  std::vector<Attachment> empty_attachment;
-  std::vector<TicketTask> empty_task;
-  cur_ticket.attachments = empty_attachment;
-  cur_ticket.tasks = empty_task;
-
 
   _SetupWelcomePage();
 
@@ -164,6 +150,9 @@ void UI::Run()
           _RefreshScreen();
           break;
         }
+
+        _ResetCurTicket();
+        _ResetCurGroup();
   
         // QUIT APP ////////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_QUIT)
@@ -177,7 +166,35 @@ void UI::Run()
           sc_page = 0;
           screen_status = SCR_MAIN;
         }
-  
+
+        // LIST DONE TICKETS IN ALL GROUPS /////////////////////////////////////
+        if (parser.Cmd() == CMD_FDT)
+        {
+          sc_page = 0;
+          screen_status = SCR_FDT;
+        }
+
+        // LIST ONGOING TICKETS IN ALL GROUPS //////////////////////////////////
+        if (parser.Cmd() == CMD_FOT)
+        {
+          sc_page = 0;
+          screen_status = SCR_FOT;
+        }
+
+        // LIST HIDDEN TICKETS IN ALL GROUPS ///////////////////////////////////
+        if (parser.Cmd() == CMD_FHT)
+        {
+          sc_page = 0;
+          screen_status = SCR_FHT;
+        }
+
+        // LIST ALL TICKETS IN ALL GROUPS //////////////////////////////////////
+        if (parser.Cmd() == CMD_FAT)
+        {
+          sc_page = 0;
+          screen_status = SCR_FAT;
+        }
+
         // LIST GROUPS /////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_LSG)
         {
@@ -278,8 +295,6 @@ void UI::Run()
           if (db->Status() == DB_OK)
           {
             db->SaveData();
-            cur_group.id = 0;
-            cur_group.name = "";
             screen_status = SCR_LSG;
           }
 
@@ -311,18 +326,6 @@ void UI::Run()
         if (parser.Cmd() == CMD_EXG)
         {
           sc_page = 0;
-          cur_group.id = 0;
-          cur_group.name = "";
-          cur_ticket.id = 0;
-          cur_ticket.group_id = 0;
-          cur_ticket.state = TKT_HID;
-          cur_ticket.creation_date = 0;
-          cur_ticket.name = "";
-          cur_ticket.desc = "";
-          std::vector<Attachment> empty_attachment;
-          std::vector<TicketTask> empty_task;
-          cur_ticket.attachments = empty_attachment;
-          cur_ticket.tasks = empty_task;
           screen_status = SCR_LSG;
         }
   
@@ -457,16 +460,6 @@ void UI::Run()
           if (db->Status() == DB_OK)
           {
             db->SaveData();
-            cur_ticket.id = 0;
-            cur_ticket.group_id = 0;
-            cur_ticket.state = TKT_HID;
-            cur_ticket.creation_date = 0;
-            cur_ticket.name = "";
-            cur_ticket.desc = "";
-            std::vector<Attachment> empty_attachment;
-            std::vector<TicketTask> empty_task;
-            cur_ticket.attachments = empty_attachment;
-            cur_ticket.tasks = empty_task;
             sc_page = 0;
             screen_status = SCR_LST;
           }
@@ -1058,16 +1051,6 @@ void UI::Run()
             break;
           }
 
-          cur_ticket.id = 0;
-          cur_ticket.group_id = 0;
-          cur_ticket.state = TKT_HID;
-          cur_ticket.creation_date = 0;
-          cur_ticket.name = "";
-          cur_ticket.desc = "";
-          std::vector<Attachment> empty_attachment;
-          std::vector<TicketTask> empty_task;
-          cur_ticket.attachments = empty_attachment;
-          cur_ticket.tasks = empty_task;
           screen_status = SCR_LST;
         }
 ////////////////////////////////////////////////////////////////////////////////  
@@ -1133,6 +1116,25 @@ void UI::Run()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void UI::_ResetCurGroup()
+{
+  cur_group.id = 0;
+  cur_group.name = "";
+}
+
+void UI::_ResetCurTicket()
+{
+  cur_ticket.id = 0;
+  cur_ticket.group_id = 0;
+  cur_ticket.state = TKT_HID;
+  cur_ticket.creation_date = 0;
+  cur_ticket.name = "";
+  cur_ticket.desc = "";
+  std::vector<Attachment> empty_attachment;
+  std::vector<TicketTask> empty_task;
+  cur_ticket.attachments = empty_attachment;
+  cur_ticket.tasks = empty_task;
+}
 void UI::_SetupWelcomePage()
 {
   screen_title = std::string(APPNAME) + " v." + APPVERSION;
@@ -1153,6 +1155,7 @@ void UI::_SetupWelcomePage()
   _AddHeaderContent("┌─────────────┬───────────────────┬─────────────────────────────────┐");
   _AddContent      ("│ quit        │                   │ quit the app                    │");
   _AddContent      ("│ main        │                   │ go to main screen               │");
+  _AddContent      ("│ fdt,fot,fht │                   │ filter done,open,hidden tickets │");
   _AddContent      ("│ lsg         │                   │ list groups                     │");
   _AddContent      ("│ addg        │ name              │ add group                       │");
   _AddContent      ("│ swg         │ id                │ switch to group [id]            │");
@@ -1182,6 +1185,98 @@ void UI::_SetupWelcomePage()
   _AddContent      ("│ dtt         │ id                │ Delete Ticket Task [id]         │");
   _AddContent      ("│ clt         │                   │ close ticket                    │");
   _AddContent      ("└─────────────┴───────────────────┴─────────────────────────────────┘");
+}
+
+void UI::_ListDoneTickets()
+{
+  screen_title = "    ID                GROUP NAME                 DESCRIPTION";
+  screen_header.clear();
+  screen_content.clear();
+  char buf[w.ws_col + 1];
+
+  for (auto &tkt : db->GetDoneTickets())
+  {
+    if (tkt.name.length() <= 20)
+    {
+      sprintf(buf, "%6ld %20s %-20s %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
+    }
+
+    else
+    {  
+      sprintf(buf, "%6ld %20s %-19s┄ %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
+    }
+
+    _AddContent(buf);
+  }
+}
+
+void UI::_ListOpenTickets()
+{
+  screen_title = "    ID                GROUP NAME                 DESCRIPTION";
+  screen_header.clear();
+  screen_content.clear();
+  char buf[w.ws_col + 1];
+
+  for (auto &tkt : db->GetOpenTickets())
+  {
+    if (tkt.name.length() <= 20)
+    {
+      sprintf(buf, "%6ld %20s %-20s %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
+    }
+
+    else
+    {  
+      sprintf(buf, "%6ld %20s %-19s┄ %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
+    }
+
+    _AddContent(buf);
+  }
+}
+
+void UI::_ListHiddenTickets()
+{
+  screen_title = "    ID                GROUP NAME                 DESCRIPTION";
+  screen_header.clear();
+  screen_content.clear();
+  char buf[w.ws_col + 1];
+
+  for (auto &tkt : db->GetHiddenTickets())
+  {
+    if (tkt.name.length() <= 20)
+    {
+      sprintf(buf, "%6ld %20s %-20s %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
+    }
+
+    else
+    {  
+      sprintf(buf, "%6ld %20s %-19s┄ %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
+    }
+
+    _AddContent(buf);
+  }
+}
+
+void UI::_ListAllTickets()
+{
+  screen_title = "    ID   STATE GROUP                NAME                 DESCRIPTION";
+  screen_header.clear();
+  screen_content.clear();
+  char buf[w.ws_col + 1];
+
+  for (auto &tkt : db->GetAllTickets())
+  {
+    if (tkt.name.length() <= 20)
+    {
+      sprintf(buf, "%6ld %7s %-20s %-20s %s", tkt.id, TicketStateToStr(tkt.state), db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.c_str(), tkt.desc.substr(0, w.ws_col - 57).c_str());
+    }
+
+    else
+    {  
+      sprintf(buf, "%6ld %7s %-20s %-19s┄ %s", tkt.id, TicketStateToStr(tkt.state), db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 57).c_str());
+    }
+
+    _AddContent(buf);
+  }
 }
 
 void UI::_ListGroups()
@@ -1325,7 +1420,51 @@ void UI::_RefreshScreen()
 
       if (app_status == APP_OK)
       {
-        status_line = "quit | main | lsg | addg | swg";
+        status_line = "quit | main | fdt | fot | fht | fat | lsg | addg | swg";
+      }
+
+    } break;
+
+    case SCR_FDT:
+    {
+      _ListDoneTickets();
+
+      if (app_status == APP_OK)
+      {
+        status_line = "opt";
+      }
+
+    } break;
+
+    case SCR_FOT:
+    {
+      _ListOpenTickets();
+
+      if (app_status == APP_OK)
+      {
+        status_line = "opt";
+      }
+
+    } break;
+
+    case SCR_FHT:
+    {
+      _ListHiddenTickets();
+
+      if (app_status == APP_OK)
+      {
+        status_line = "opt";
+      }
+
+    } break;
+
+    case SCR_FAT:
+    {
+      _ListAllTickets();
+
+      if (app_status == APP_OK)
+      {
+        status_line = "opt";
       }
 
     } break;
@@ -1336,7 +1475,7 @@ void UI::_RefreshScreen()
 
       if (app_status == APP_OK)
       {
-        status_line = "quit | main | lsg | addg | swg";
+        status_line = "quit | main | fdt | fot | fht | fat | lsg | addg | swg";
       }
 
     } break;
@@ -1423,6 +1562,26 @@ void UI::_RefreshScreen()
   if (cur_group.id > 0)
   {
     wprintf(L"%s", cur_group.name.c_str());
+  }
+
+  else if (screen_status == SCR_FDT)
+  {
+    wprintf(L"( Tickets Done )");
+  }
+
+  else if (screen_status == SCR_FOT)
+  {
+    wprintf(L"( Ongoing Tickets )");
+  }
+
+  else if (screen_status == SCR_FHT)
+  {
+    wprintf(L"( Hidden Tickets )");
+  }
+
+  else if (screen_status == SCR_FAT)
+  {
+    wprintf(L"( ALL Tickets )");
   }
 
   if (cur_ticket.id > 0)

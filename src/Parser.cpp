@@ -22,22 +22,24 @@ Parser::Parser()
 {
   commands =
   {
-    "quit", "main",  "lsg", "addg",  "swg",
-    "reng", "delg",  "lst",  "exg", "addt",
-     "opt", "rent",  "ctd", "delt", "movt",
-     "mto",  "mtd",  "mth",  "ata",  "ota",
-     "nta",  "dta",  "att", "ittp", "dttp",
-    "ctte", "cttr", "cttd",  "dtt",  "clt"
+    "quit", "main",  "fdt",  "fot",  "fht", "fat",
+     "lsg", "addg",  "swg", "reng", "delg",
+     "lst",  "exg", "addt",  "opt", "rent",
+     "ctd", "delt", "movt",  "mto",  "mtd",
+     "mth",  "ata",  "ota",  "nta",  "dta",
+     "att", "ittp", "dttp", "ctte", "cttr",
+    "cttd",  "dtt",  "clt"                 
   };
 
   n_param =
   {
-    0, 0, 0, 1, 1,
-    1, 0, 0, 0, 2,
-    1, 1, 1, 0, 1,
-    0, 0, 0, 1, 1,
-    1, 1, 3, 1, 1,
-    2, 2, 2, 1, 0
+    0, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 0,
+    0, 0, 2, 1, 1,
+    1, 0, 1, 0, 0,
+    0, 1, 1, 1, 1,
+    3, 1, 1, 2, 2,
+    2, 1, 0       
   };
 }
 

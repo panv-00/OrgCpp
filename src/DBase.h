@@ -149,6 +149,10 @@ public:
 
   std::vector<Group> GetGroups();
   std::vector<Ticket> GetTickets(size_t group_id);
+  std::vector<Ticket> GetDoneTickets();
+  std::vector<Ticket> GetOpenTickets();
+  std::vector<Ticket> GetHiddenTickets();
+  std::vector<Ticket> GetAllTickets();
 
 private:
   void _InitDB();
