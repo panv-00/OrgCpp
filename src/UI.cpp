@@ -26,7 +26,7 @@ std::vector<std::string> wrap_string(const std::string &str, uint16_t width)
 
       current_line += ' ';
     }
-    
+
     else
     {
       current_line += c;
@@ -132,17 +132,17 @@ void UI::Run()
         CleanString(input_line);
         cur = input_line.length();
         app_status = APP_OK;
-  
+
         if (input_line.length() == 0)
         {
           break;
         }
-  
+
         parser.Parse(input_line);
         input_line = "";
         cur = 0;
         start_at = 0;
-  
+
         if (parser.Status() != TKN_OK)
         {
           status_line = std::string("Error: ") + PERR(parser.Status());
@@ -153,13 +153,13 @@ void UI::Run()
 
         _ResetCurTicket();
         _ResetCurGroup();
-  
+
         // QUIT APP ////////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_QUIT)
         {
           screen_status = SCR_QUIT;
         }
-  
+
         // MAIN SCREEN /////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_MAIN)
         {
@@ -201,18 +201,18 @@ void UI::Run()
           sc_page = 0;
           screen_status = SCR_LSG;
         }
-  
+
         // ADD GROUP ///////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_ADDG)
         {
           db->AddGroup(parser.Param(0));
-  
+
           if (db->Status() != DB_ERR)
           {
             db->SaveData();
             screen_status = SCR_LSG;
           }
-  
+
           else
           {
             app_status = APP_ER;
@@ -227,13 +227,13 @@ void UI::Run()
           {
             size_t num = std::stoul(parser.Param(0));
             cur_group = db->GetGroup(num);
-  
+
             if (db->Status() == DB_OK)
             {
               sc_page = 0;
               screen_status = SCR_LST;
             }
-  
+
             else
             {
               app_status = APP_ER;
@@ -241,7 +241,7 @@ void UI::Run()
                             "] : DB Error / Failed!";
             }
           }
-  
+
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
@@ -249,7 +249,7 @@ void UI::Run()
                           "] : Error / Invalid index!";
           }
         }
- 
+
         // RENAME GROUP ////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_RENG)
         {
@@ -261,15 +261,15 @@ void UI::Run()
             break;
           }
 
- 
+
           db->EditGroup(cur_group.id, parser.Param(0));
- 
+
           if (db->Status() == DB_OK)
           {
             db->SaveData();
             cur_group = db->GetGroup(cur_group.id);
           }
-  
+
           else
           {
             app_status = APP_ER;
@@ -278,7 +278,7 @@ void UI::Run()
                                      parser.Param(0) + ": DB Error / Failed!";
           }
         }
-  
+
         // DELETE GROUP ////////////////////////////////////////////////////////
         if (parser.Cmd() == CMD_DELG)
         {
@@ -289,7 +289,7 @@ void UI::Run()
             _RefreshScreen();
             break;
           }
- 
+
           db->DeleteGroup(cur_group.id);
 
           if (db->Status() == DB_OK)
@@ -317,7 +317,7 @@ void UI::Run()
             _RefreshScreen();
             break;
           }
-  
+
           sc_page = 0;
           screen_status = SCR_LST;
         }
@@ -328,7 +328,7 @@ void UI::Run()
           sc_page = 0;
           screen_status = SCR_LSG;
         }
-  
+
         // ADD TICKET TO CURRENT GROUP /////////////////////////////////////////
         if (parser.Cmd() == CMD_ADDT)
         {
@@ -339,7 +339,7 @@ void UI::Run()
             _RefreshScreen();
             break;
           }
-  
+
           db->AddTicket(cur_group.id, parser.Param(0), parser.Param(1));
 
           if (db->Status() != DB_ERR)
@@ -363,7 +363,7 @@ void UI::Run()
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
-            
+
             cur_ticket = db->GetTicket(tnum);
 
             if (db->Status() == DB_OK && cur_ticket.id > 0)
@@ -379,7 +379,7 @@ void UI::Run()
                             "] : DB Error / Failed!";
             }
           }
-  
+
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
@@ -398,7 +398,7 @@ void UI::Run()
             _RefreshScreen();
             break;
           }
- 
+
           db->EditTicket(cur_ticket.id, parser.Param(0), cur_ticket.desc);
 
           if (db->Status() == DB_OK)
@@ -486,7 +486,7 @@ void UI::Run()
           try
           {
             size_t gnum = std::stoul(parser.Param(0));
-            
+
             db->GetGroup(gnum);
 
             if (db->Status() == DB_OK)
@@ -520,7 +520,7 @@ void UI::Run()
                             SizeTToString(gnum);
             }
           }
-  
+
           catch (const std::invalid_argument &e)
           {
             app_status = APP_ER;
@@ -614,7 +614,7 @@ void UI::Run()
                           "] as HIDDEN: DB Error / Failed!";
           }
         }
- 
+
         // ADD TICKET ATTACHMENT ///////////////////////////////////////////////
         if (parser.Cmd() == CMD_ATA)
         {
@@ -657,7 +657,7 @@ void UI::Run()
           try
           {
             size_t anum = std::stoul(parser.Param(0));
- 
+
             db->OpenTicketAttachment(cur_ticket.id, anum);
 
             if (db->Status() != DB_OK)
@@ -718,7 +718,7 @@ void UI::Run()
           try
           {
             size_t anum = std::stoul(parser.Param(0));
- 
+
             db->DeleteTicketAttachment(cur_ticket.id, anum);
 
             if (db->Status() == DB_OK)
@@ -775,13 +775,13 @@ void UI::Run()
             parser.Param(1),
             parser.Param(2)
           );
-  
+
           if (db->Status() == DB_OK)
           {
             db->SaveData();
             cur_ticket = db->GetTicket(cur_ticket.id);
           }
-  
+
           else
           {
             app_status = APP_ER;
@@ -807,7 +807,7 @@ void UI::Run()
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
- 
+
             db->IncTicketTaskProgress(cur_ticket.id, tnum);
 
             if (db->Status() == DB_OK)
@@ -845,7 +845,7 @@ void UI::Run()
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
- 
+
             db->DecTicketTaskProgress(cur_ticket.id, tnum);
 
             if (db->Status() == DB_OK)
@@ -896,7 +896,7 @@ void UI::Run()
               _RefreshScreen();
               break;
             }
- 
+
             db->EditTicketTaskETA(cur_ticket.id, tnum, eta);
 
             if (db->Status() == DB_OK)
@@ -1016,7 +1016,7 @@ void UI::Run()
           try
           {
             size_t tnum = std::stoul(parser.Param(0));
- 
+
             db->DeleteTicketTask(cur_ticket.id, tnum);
 
             if (db->Status() == DB_OK)
@@ -1056,7 +1056,7 @@ void UI::Run()
 ////////////////////////////////////////////////////////////////////////////////  
         _RefreshScreen();
       } break;
-  
+
       case BACKSPACE:
       {
         if (cur > 0)
@@ -1065,7 +1065,7 @@ void UI::Run()
           input_line.erase(cur, 1);
         }
       } break;
-  
+
       case ESCAPE_CHAR:
       {
         c = _Getch();
@@ -1073,7 +1073,7 @@ void UI::Run()
         if (c == ARROW_CHAR)
         {
           c = _Getch();
-  
+
           if (c == ARROW_UP)
           {
             sc_page = (sc_page - 1) % (num_of_pages + 1);
@@ -1094,7 +1094,7 @@ void UI::Run()
           }  
         }
       } break;
-  
+
       default:
       {
         if (c >= ' ' && c <= '~' && input_line.length() < (LARGEBUF - 1))
@@ -1225,7 +1225,7 @@ void UI::_ListOpenTickets()
     }
 
     else
-    {  
+    {
       sprintf(buf, "%6ld %20s %-19s┄ %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
     }
 
@@ -1248,7 +1248,7 @@ void UI::_ListHiddenTickets()
     }
 
     else
-    {  
+    {
       sprintf(buf, "%6ld %20s %-19s┄ %s", tkt.id, db->GetGroup(tkt.group_id).name.substr(0, 20).c_str(), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 50).c_str());
     }
 
@@ -1308,7 +1308,7 @@ void UI::_ListTickets()
     }
 
     else
-    {  
+    {
       sprintf(buf, "%6ld %7s %-19s┄ %s", tkt.id, TicketStateToStr(tkt.state), tkt.name.substr(0, 19).c_str(), tkt.desc.substr(0, w.ws_col - 36).c_str());
     }
 
@@ -1502,7 +1502,7 @@ void UI::_RefreshScreen()
 
     } break;
   }
-  
+
   // Draw Title
   _MoveTo(1, 1);
   _SetColor(CLR_BLUE_BG);
@@ -1528,7 +1528,7 @@ void UI::_RefreshScreen()
     _MoveTo(i + 2, 1);
     wprintf(L"%s", screen_header[i].c_str());
   }
-  
+
   // Draw Screen
   for (size_t i = 0; i < sc_num_of_lines; i++)
   {
@@ -1542,7 +1542,7 @@ void UI::_RefreshScreen()
   // Draw Footer
   _MoveTo(w.ws_row - 3, 1);
   _SetColor(CLR_BLUE_FG);
-  
+
   for (uint16_t i = 0; i < w.ws_col; i++)
   {
     wprintf(L"─");
@@ -1550,7 +1550,7 @@ void UI::_RefreshScreen()
 
   _SetColor(CLR_BLACK_BG);
   _MoveTo(w.ws_row - 2, 1);
-  
+
   for (uint16_t i = 0; i < w.ws_col; i++)
   {
     wprintf(L" ");
@@ -1558,7 +1558,7 @@ void UI::_RefreshScreen()
 
   _MoveTo(w.ws_row - 2, 1);
   wprintf(L"◇ ");
-  
+
   if (cur_group.id > 0)
   {
     wprintf(L"%s", cur_group.name.c_str());
@@ -1591,7 +1591,7 @@ void UI::_RefreshScreen()
   }
 
   _MoveTo(w.ws_row - 1, 1);
-  
+
   for (uint16_t i = 0; i < w.ws_col; i++)
   {
     wprintf(L" ");
@@ -1637,7 +1637,7 @@ void UI::_RefreshScreen()
     wprintf(L"%s [ Page %2ld of %2ld ]", status_line.substr(0, w.ws_col - 18).c_str(),
                                        sc_page + 1, num_of_pages + 1);
   }
- 
+
   _EchoInputLine();
 }
 
@@ -1646,7 +1646,7 @@ char UI::_Getch()
   char c = 0;
   fd_set readfds;
   struct timeval tv;
-  
+
   FD_ZERO(&readfds);
   FD_SET(STDIN_FILENO, &readfds);
 
@@ -1670,14 +1670,14 @@ char UI::_Getch()
       }
     }
   }
-  
+
   return c;
 }
 
 void UI::_CheckTermSize()
 {
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-  
+
   if (w.ws_row < min_h)
   {
     exit_message = "App Cannot Continue. Term Height = " +
